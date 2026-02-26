@@ -45,41 +45,42 @@ else:
 
 REDIS_URL = os.getenv("REDIS_URL") or os.getenv("CELERY_BROKER_URL") or "redis://localhost:6379/0"
 
-celery_kwargs = {
-    "broker": REDIS_URL,
-    "backend": REDIS_URL,
-    "include": [
+celery_app = Celery(
+    "flashcard_worker",
+    broker=REDIS_URL,
+    backend=REDIS_URL,
+    include=[
         "tasks.audio",
         "tasks.pdf",
-    ]
+    ],
+)
+
+celery_conf = {
+    # Serialisation
+    "task_serializer": "json",
+    "result_serializer": "json",
+    "accept_content": ["json"],
+
+    # Reliability
+    "task_acks_late": True,           # Re-queue if worker crashes mid-task
+    "task_reject_on_worker_lost": True,
+    "worker_prefetch_multiplier": 1,  # Fair dispatch — don't over-fetch tasks
+
+    # Timeouts and retries
+    "task_soft_time_limit": 120,      # Soft: task gets SoftTimeLimitExceeded
+    "task_time_limit": 180,           # Hard: worker killed after 3 min
+
+    # Result expiry
+    "result_expires": 3600,           # Clear results from Redis after 1 hour
+
+    # Timezone
+    "timezone": "UTC",
+    "enable_utc": True,
 }
 
 # If the Redis URL is secure, Celery requires explicit SSL cert requirements
 if REDIS_URL.startswith("rediss://"):
-    celery_kwargs["broker_use_ssl"] = {"ssl_cert_reqs": ssl.CERT_NONE}
-    celery_kwargs["redis_backend_use_ssl"] = {"ssl_cert_reqs": ssl.CERT_NONE}
+    celery_conf["broker_use_ssl"] = {"ssl_cert_reqs": ssl.CERT_NONE}
+    celery_conf["redis_backend_use_ssl"] = {"ssl_cert_reqs": ssl.CERT_NONE}
 
-celery_app = Celery("flashcard_worker", **celery_kwargs)
-
-celery_app.conf.update(
-    # Serialisation
-    task_serializer="json",
-    result_serializer="json",
-    accept_content=["json"],
-
-    # Reliability
-    task_acks_late=True,           # Re-queue if worker crashes mid-task
-    task_reject_on_worker_lost=True,
-    worker_prefetch_multiplier=1,  # Fair dispatch — don't over-fetch tasks
-
-    # Timeouts and retries
-    task_soft_time_limit=120,      # Soft: task gets SoftTimeLimitExceeded
-    task_time_limit=180,           # Hard: worker killed after 3 min
-
-    # Result expiry
-    result_expires=3600,           # Clear results from Redis after 1 hour
-
-    # Timezone
-    timezone="UTC",
-    enable_utc=True,
-)
+celery_app.conf.update(**celery_conf)
