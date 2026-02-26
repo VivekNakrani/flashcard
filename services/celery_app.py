@@ -12,6 +12,7 @@ Starting the worker:
     celery -A services.celery_app worker --loglevel=info --concurrency=4
 """
 
+import ssl
 import os
 import logging
 import sentry_sdk
@@ -44,15 +45,21 @@ else:
 
 REDIS_URL = os.getenv("REDIS_URL") or os.getenv("CELERY_BROKER_URL") or "redis://localhost:6379/0"
 
-celery_app = Celery(
-    "flashcard_worker",
-    broker=REDIS_URL,
-    backend=REDIS_URL,
-    include=[
+celery_kwargs = {
+    "broker": REDIS_URL,
+    "backend": REDIS_URL,
+    "include": [
         "tasks.audio",
         "tasks.pdf",
-    ],
-)
+    ]
+}
+
+# If the Redis URL is secure, Celery requires explicit SSL cert requirements
+if REDIS_URL.startswith("rediss://"):
+    celery_kwargs["broker_use_ssl"] = {"ssl_cert_reqs": ssl.CERT_NONE}
+    celery_kwargs["redis_backend_use_ssl"] = {"ssl_cert_reqs": ssl.CERT_NONE}
+
+celery_app = Celery("flashcard_worker", **celery_kwargs)
 
 celery_app.conf.update(
     # Serialisation
