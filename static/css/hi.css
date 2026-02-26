@@ -1,0 +1,113 @@
+:root {
+            --loading-dot-size: 8px;
+            --loading-dot-gap: 8px;
+            --loading-animation-duration: 1000ms;
+        }
+
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+
+        body {
+            min-height: max(884px, 100dvh);
+        }
+
+        .loading-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 5;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.6);
+            transition: opacity 0.2s ease;
+        }
+
+        .loading-overlay.is-active {
+            display: flex;
+        }
+
+        .loading-dots {
+            display: flex;
+            gap: var(--loading-dot-gap);
+            color: #8E8E93;
+        }
+
+        .loading-dots span {
+            width: var(--loading-dot-size);
+            height: var(--loading-dot-size);
+            border-radius: 50%;
+            background: currentColor;
+            opacity: 0.5;
+            animation: dotPulse var(--loading-animation-duration) infinite ease-in-out;
+            will-change: transform, opacity;
+        }
+
+        .loading-dots span:nth-child(2) {
+            animation-delay: 150ms;
+        }
+
+        .loading-dots span:nth-child(3) {
+            animation-delay: 300ms;
+        }
+
+        @keyframes dotPulse {
+            0% {
+                transform: scale(1);
+                opacity: 0.35;
+            }
+
+            50% {
+                transform: scale(1.25);
+                opacity: 1;
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 0.35;
+            }
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .loading-dots {
+                color: #92adc9;
+            }
+
+            .loading-overlay {
+                background: rgba(0, 0, 0, 0.6);
+            }
+        }
+
+        .study-card {
+            user-select: none;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            will-change: transform;
+        }
+
+        .study-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .study-card:hover {
+                box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+            }
+        }
+
+/* ─── Extracted from hi.html ─── */
+
+html {
+            color-scheme: light;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .loading-overlay {
+                background: rgba(255, 255, 255, 0.6) !important;
+            }
+
+            .loading-dots {
+                color: #8E8E93 !important;
+            }
+        }

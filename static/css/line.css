@@ -1,0 +1,103 @@
+.material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+
+        .card {
+            background: var(--tw-bg-opacity, 1);
+        }
+
+        .loading-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 5;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, .6);
+            transition: opacity .2s ease
+        }
+
+        .loading-overlay.is-active {
+            display: flex;
+        }
+
+        .loading-dots {
+            display: flex;
+            gap: 8px;
+            color: #8E8E93
+        }
+
+        .loading-dots span {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: currentColor;
+            opacity: 0.5;
+            animation: dotPulse 1000ms infinite ease-in-out;
+        }
+
+        .loading-dots span:nth-child(2) {
+            animation-delay: 150ms;
+        }
+
+        .loading-dots span:nth-child(3) {
+            animation-delay: 300ms;
+        }
+
+        @keyframes dotPulse {
+            0% {
+                transform: scale(1);
+                opacity: .35
+            }
+
+            50% {
+                transform: scale(1.25);
+                opacity: 1
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: .35
+            }
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .loading-dots {
+                color: #92adc9
+            }
+
+            .loading-overlay {
+                background: rgba(0, 0, 0, .6)
+            }
+        }
+
+        .tile-enter {
+            animation: slideDown 380ms ease-out both;
+            will-change: transform, opacity
+        }
+
+        @keyframes slideDown {
+            0% {
+                transform: translateY(-6px);
+                opacity: 0
+            }
+
+            100% {
+                transform: translateY(0);
+                opacity: 1
+            }
+        }
+
+        html {
+            color-scheme: light;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .loading-overlay {
+                background: rgba(255, 255, 255, .6) !important;
+            }
+
+            .loading-dots {
+                color: #8E8E93 !important;
+            }
+        }

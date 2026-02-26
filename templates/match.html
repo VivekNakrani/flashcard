@@ -3,6 +3,7 @@
 
 <head>
     <meta charset="utf-8" />
+
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <meta name="color-scheme" content="light" />
     <meta name="theme-color" content="#ffffff" />
@@ -48,247 +49,24 @@
             }
         }
     </script>
-    <style>
-        .material-symbols-outlined {
-            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24
-        }
-        
-        body {
-            min-height: max(884px, 100dvh)
-        }
-        
-        .loading-overlay {
-            position: fixed;
-            inset: 0;
-            z-index: 5;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            background: rgba(255, 255, 255, .6);
-            transition: opacity .2s ease
-        }
-        
-        .loading-overlay.is-active {
-            display: flex
-        }
-        
-        .loading-dots {
-            display: flex;
-            gap: 8px;
-            color: #8E8E93
-        }
-        
-        .loading-dots span {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: currentColor;
-            opacity: .5;
-            animation: dotPulse 1000ms infinite ease-in-out;
-            will-change: transform, opacity
-        }
-        
-        .loading-dots span:nth-child(2) {
-            animation-delay: 150ms
-        }
-        
-        .loading-dots span:nth-child(3) {
-            animation-delay: 300ms
-        }
-        
-        @keyframes dotPulse {
-            0% {
-                transform: scale(1);
-                opacity: .35
-            }
-            50% {
-                transform: scale(1.25);
-                opacity: 1
-            }
-            100% {
-                transform: scale(1);
-                opacity: .35
-            }
-        }
-        
-        @media (prefers-color-scheme: dark) {
-            .loading-dots {
-                color: #92adc9
-            }
-            .loading-overlay {
-                background: rgba(0, 0, 0, .6)
-            }
-        }
-        
-        .card {
-            border: 1px solid #e5e7eb;
-            border-radius: 16px;
-            background: #fff
-        }
-        
-        .card-dark {
-            border-color: #1f2937;
-            background: #19242E
-        }
-        
-        .pair-btn {
-            height: 88px;
-            border: 1px solid #e5e7eb;
-            border-radius: 10px;
-            background: #fff;
-            color: #333;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            user-select: none;
-            transition: background-color .36s ease, border-color .36s ease, box-shadow .36s ease
-        }
-        
-        .pair-btn.active {
-            outline: 2px solid #3b82f6;
-            background: #e8f0fe
-        }
-        
-        .pair-btn.correct {
-            background: #dcfce7;
-            color: #166534;
-            border-color: #86efac
-        }
-        
-        .pair-btn.wrong {
-            background: #fee2e2;
-            color: #991b1b;
-            border-color: #fecaca
-        }
-        
-        .pair-text {
-            height: 88px;
-            border: 1px solid #e5e7eb;
-            border-radius: 10px;
-            background: #fff;
-            color: #333;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0 10px;
-            transition: background-color .36s ease, border-color .36s ease, box-shadow .36s ease
-        }
-        
-        .pair-text.active {
-            outline: 2px solid #3b82f6;
-            background: #e8f0fe
-        }
-        
-        .pair-text.correct {
-            background: #dcfce7;
-            color: #166534;
-            border-color: #86efac
-        }
-        
-        .pair-text.wrong {
-            background: #fee2e2;
-            color: #991b1b;
-            border-color: #fecaca
-        }
-        
-        @media (prefers-color-scheme: dark) {
-            .card {
-                background: #19242E;
-                border-color: #1f2937
-            }
-            .pair-btn:not(.active):not(.correct):not(.wrong) {
-                background: #ffffff;
-                color: #333;
-                border-color: #374151
-            }
-            .pair-text:not(.active):not(.correct):not(.wrong) {
-                background: #ffffff;
-                color: #333;
-                border-color: #374151
-            }
-        }
-        
-        .form-toggle {
-            accent-color: #64748b
-        }
-        
-        @media (prefers-color-scheme: dark) {
-            .form-toggle {
-                accent-color: #9ca3af
-            }
-        }
-        
-        .fade-out {
-            opacity: 0;
-            transition: opacity .36s ease
-        }
-        
-        .fade-in {
-            opacity: 0;
-            transform: translateY(8px);
-            animation: fadeIn .64s ease forwards
-        }
-        
-        @keyframes fadeIn {
-            0% {
-                opacity: 0;
-                transform: translateY(8px)
-            }
-            100% {
-                opacity: 1;
-                transform: translateY(0)
-            }
-        }
-        
-        .no-anim {
-            transition: none!important;
-            animation: none!important
-        }
-        
-        .disable-interactions {
-            pointer-events: none
-        }
-    </style>
-    <style>
-        html {
-            color-scheme: light;
-        }
-        
-        @media (prefers-color-scheme: dark) {
-            .loading-overlay {
-                background: rgba(255, 255, 255, .6);
-            }
-            .loading-dots {
-                color: #8E8E93;
-            }
-            .card {
-                background: #fff;
-                border-color: #e5e7eb;
-            }
-            .pair-btn:not(.active):not(.correct):not(.wrong) {
-                background: #fff;
-                color: #333;
-                border-color: #e5e7eb;
-            }
-            .pair-text:not(.active):not(.correct):not(.wrong) {
-                background: #fff;
-                color: #333;
-                border-color: #e5e7eb;
-            }
-            .form-toggle {
-                accent-color: #64748b;
-            }
-        }
-    </style>
+    
+    
+    <link rel="stylesheet" href="/static/css/match.css">
 </head>
 
 <body class="bg-background-light dark:bg-background-dark font-display">
     <div class="relative flex min-h-screen w-full flex-col">
-        <header class="sticky top-0 z-10 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-sm border-b border-slate-200 dark:border-slate-800">
+        <header
+            class="sticky top-0 z-10 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-sm border-b border-slate-200 dark:border-slate-800">
             <div class="mx-auto max-w-2xl px-2 py-2 flex items-center gap-2">
-                <button id="backBtn" class="flex h-8 w-8 items-center justify-center rounded-full text-text-primary-light dark:text-text-primary-dark"><span class="material-symbols-outlined text-xl">close</span></button>
-                <div class="flex-1 text-center text-sm font-semibold text-text-secondary-light dark:text-text-secondary-dark" id="progressText">0/0</div>
-                <button id="homeBtn" class="flex h-8 w-8 items-center justify-center rounded-full text-text-primary-light dark:text-text-primary-dark" aria-label="Home"><span class="material-symbols-outlined text-xl">home</span></button>
+                <button id="backBtn"
+                    class="flex h-8 w-8 items-center justify-center rounded-full text-text-primary-light dark:text-text-primary-dark"><span
+                        class="material-symbols-outlined text-xl">close</span></button>
+                <div class="flex-1 text-center text-sm font-semibold text-text-secondary-light dark:text-text-secondary-dark"
+                    id="progressText">0/0</div>
+                <button id="homeBtn"
+                    class="flex h-8 w-8 items-center justify-center rounded-full text-text-primary-light dark:text-text-primary-dark"
+                    aria-label="Home"><span class="material-symbols-outlined text-xl">home</span></button>
             </div>
         </header>
         <div id="globalLoader" class="loading-overlay is-active" aria-hidden="false">
@@ -297,615 +75,59 @@
         <main class="mx-auto max-w-2xl p-2 w-full">
 
             <div id="matchBody">
-                <h2 class="text-lg font-bold text-text-primary-light dark:text-text-primary-dark mb-4 mt-1 text-center">Select the matching pairs</h2>
+                <h2 class="text-lg font-bold text-text-primary-light dark:text-text-primary-dark mb-4 mt-1 text-center">
+                    Select the matching pairs</h2>
                 <div class="grid grid-cols-2 gap-3">
                     <div id="leftCol" class="space-y-3"></div>
                     <div id="rightCol" class="space-y-3"></div>
                 </div>
                 <div class="mt-4 pb-2 flex items-center justify-center gap-2">
                     <input id="showGermanToggle" type="checkbox" class="rounded form-toggle" />
-                    <label for="showGermanToggle" class="text-sm text-text-secondary-light dark:text-text-secondary-dark">Play German audio (instead of text)</label>
+                    <label for="showGermanToggle"
+                        class="text-sm text-text-secondary-light dark:text-text-secondary-dark">Play German audio
+                        (instead of text)</label>
                 </div>
                 <div id="feedback" class="mt-3 text-sm" hidden></div>
             </div>
             <div id="completeOverlay" class="mt-6" hidden>
                 <div class="card p-6 rounded-2xl">
-                    <div class="mx-auto mb-4 flex items-center justify-center h-16 w-16 rounded-full bg-green-100 text-green-600">
+                    <div
+                        class="mx-auto mb-4 flex items-center justify-center h-16 w-16 rounded-full bg-green-100 text-green-600">
                         <span class="material-symbols-outlined text-3xl">check_circle</span>
                     </div>
-                    <div class="text-center text-xl font-bold text-text-primary-light dark:text-text-primary-dark">Great Job!</div>
-                    <div class="mt-1 text-center text-green-600 dark:text-green-400">Completed — all words matched!</div>
+                    <div class="text-center text-xl font-bold text-text-primary-light dark:text-text-primary-dark">Great
+                        Job!</div>
+                    <div class="mt-1 text-center text-green-600 dark:text-green-400">Completed — all words matched!
+                    </div>
                     <div class="mt-5 grid grid-cols-2 gap-3">
                         <div class="border rounded-xl p-3 bg-white/60 dark:bg-white/10">
                             <div class="text-xs text-text-secondary-light dark:text-text-secondary-dark">Accuracy</div>
-                            <div id="accValue" class="mt-1 text-lg font-semibold text-text-primary-light dark:text-text-primary-dark">100%</div>
+                            <div id="accValue"
+                                class="mt-1 text-lg font-semibold text-text-primary-light dark:text-text-primary-dark">
+                                100%</div>
                         </div>
                         <div class="border rounded-xl p-3 bg-white/60 dark:bg-white/10">
                             <div class="text-xs text-text-secondary-light dark:text-text-secondary-dark">Time</div>
-                            <div id="timeValue" class="mt-1 text-lg font-semibold text-text-primary-light dark:text-text-primary-dark">0s</div>
+                            <div id="timeValue"
+                                class="mt-1 text-lg font-semibold text-text-primary-light dark:text-text-primary-dark">
+                                0s</div>
                         </div>
                     </div>
                     <div class="mt-6 space-y-3">
-                        <button id="continueBtn" class="w-full h-11 rounded-xl bg-green-600 text-white font-semibold">Spelling</button>
-                        <button id="reviewBtn" class="w-full h-11 rounded-xl bg-gray-100 text-text-primary-light dark:bg-gray-800 dark:text-text-primary-dark font-semibold" disabled>Review Mistakes</button>
+                        <button id="continueBtn"
+                            class="w-full h-11 rounded-xl bg-green-600 text-white font-semibold">Spelling</button>
+                        <button id="reviewBtn"
+                            class="w-full h-11 rounded-xl bg-gray-100 text-text-primary-light dark:bg-gray-800 dark:text-text-primary-dark font-semibold"
+                            disabled>Review Mistakes</button>
                         <a id="goDeckBtn" href="/" class="block text-center text-primary mt-2">Go to Deck List</a>
                     </div>
                 </div>
             </div>
         </main>
     </div>
-    <script>
-        const backBtn = document.getElementById('backBtn');
-        const homeBtn = document.getElementById('homeBtn');
-        const matchBody = document.getElementById('matchBody');
-        const completeOverlay = document.getElementById('completeOverlay');
-        const accValue = document.getElementById('accValue');
-        const timeValue = document.getElementById('timeValue');
-        const continueBtn = document.getElementById('continueBtn');
-        const reviewBtn = document.getElementById('reviewBtn');
-        const goDeckBtn = document.getElementById('goDeckBtn');
-        const leftCol = document.getElementById('leftCol');
-        const rightCol = document.getElementById('rightCol');
-        const showGermanToggle = document.getElementById('showGermanToggle');
-        const progressText = document.getElementById('progressText');
-        const feedback = document.getElementById('feedback');
-        try {
-            feedback.hidden = true;
-        } catch {}
-        const globalLoader = document.getElementById('globalLoader');
-
-        function showLoader() {
-            globalLoader.classList.add('is-active')
-        }
-
-        function hideLoader() {
-            globalLoader.classList.remove('is-active')
-        }
-        const params = new URLSearchParams(location.search);
-        let currentDeck = params.get('deck') || '';
-        let currentFolder = params.get('from') || '';
-        let cards = [];
-        let originalCards = [];
-        let used = new Set();
-        let round = [];
-        let matched = 0;
-        let leftSelected = -1;
-        let rightSelected = -1;
-        let pendingIndices = [];
-        let pendingRightIndices = [];
-        let rightOrder = [];
-        let showGermanLeft = false;
-        let matchedIndices = new Set();
-        let matchedRightIndices = new Set();
-        let isAnimatingWrong = false;
-        const audio = new Audio();
-        const audioCache = new Map();
-        let sessionStart = performance.now();
-        let attempts = 0;
-        let correctAttempts = 0;
-        let mistakes = [];
-        let doneShown = false;
-
-        function setProgress() {
-            progressText.textContent = `${used.size}/${cards.length}`
-        }
-
-        function play(text) {
-            const key = `audio:de:${text}`;
-            const ls = localStorage.getItem(key);
-            if (ls) {
-                audio.src = ls;
-            } else {
-                const cached = audioCache.get(text);
-                if (cached) {
-                    audio.src = cached;
-                } else {
-                    audio.src = `/tts?text=${encodeURIComponent(text)}&lang=de`;
-                }
-            }
-            audio.play().catch(() => {})
-        }
-
-        function hydrateAudioLocal() {
-            round.forEach(c => {
-                const v = localStorage.getItem(`audio:de:${c.de}`);
-                if (v) audioCache.set(c.de, v);
-            });
-        }
-        async function preloadRoundAudio() {
-            const tasks = round.map(c => fetch(`/tts?text=${encodeURIComponent(c.de)}&lang=de`).then(r => r.blob()).then(b => {
-                const url = URL.createObjectURL(b);
-                audioCache.set(c.de, url);
-            }).catch(() => {}));
-            await Promise.allSettled(tasks)
-        }
-
-        function pickRound() {
-            round = [];
-            matched = 0;
-            leftSelected = -1;
-            rightSelected = -1;
-            const availableIdx = [...cards.keys()].filter(i => !used.has(i));
-            const pool = Math.min(5, availableIdx.length);
-            const seen = new Set();
-            while (round.length < pool && availableIdx.length) {
-                const j = Math.floor(Math.random() * availableIdx.length);
-                const idx = availableIdx.splice(j, 1)[0];
-                const c = cards[idx];
-                const key = (c.en || '').trim().toLowerCase();
-                if (seen.has(key)) continue;
-                seen.add(key);
-                round.push(c);
-            }
-        }
-
-        function renderRound() {
-            leftCol.innerHTML = '';
-            rightCol.innerHTML = '';
-            round.forEach((c, idx) => {
-                const btn = document.createElement('button');
-                if (showGermanLeft) {
-                    btn.className = 'pair-text w-full';
-                    btn.textContent = c.de;
-                    btn.addEventListener('click', () => {
-                        leftSelected = idx;
-                        updateSelection();
-                        checkMatch();
-                    });
-                } else {
-                    btn.className = 'pair-btn w-full';
-                    btn.innerHTML = '<span class="material-symbols-outlined">volume_up</span>';
-                    btn.addEventListener('click', () => {
-                        play(c.de);
-                        leftSelected = idx;
-                        updateSelection();
-                        checkMatch();
-                    });
-                }
-                if (matchedIndices.has(idx)) {
-                    btn.classList.add('correct');
-                    btn.disabled = true;
-                }
-                leftCol.appendChild(btn);
-            });
-            const texts = round.map(c => c.en);
-            for (let i = texts.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [texts[i], texts[j]] = [texts[j], texts[i]];
-            }
-            texts.forEach((t, i) => {
-                const div = document.createElement('button');
-                div.className = 'pair-text w-full';
-                div.textContent = t;
-                div.addEventListener('click', () => {
-                    rightSelected = i;
-                    updateSelection(true, i);
-                    checkMatch();
-                });
-                if (matchedRightIndices.has(i)) {
-                    div.classList.add('correct');
-                    div.disabled = true;
-                }
-                rightCol.appendChild(div);
-            });
-            rightOrder = texts.slice();
-            hydrateAudioLocal();
-            preloadRoundAudio();
-        }
-
-        function updateSelection(isRight = false, textOrIndex = '') {
-            const l = Array.from(leftCol.children);
-            l.forEach((el, i) => {
-                el.classList.toggle('active', i === leftSelected)
-            });
-            const r = Array.from(rightCol.children);
-            r.forEach((el) => {
-                el.classList.remove('active')
-            });
-            if (isRight) {
-                if (typeof textOrIndex === 'number' && r[textOrIndex]) {
-                    r[textOrIndex].classList.add('active');
-                } else {
-                    r.forEach(el => {
-                        if (el.textContent === textOrIndex) el.classList.add('active')
-                    });
-                }
-            }
-        }
-
-        function clearActive() {
-            Array.from(leftCol.children).forEach(el => el.classList.remove('active'));
-            Array.from(rightCol.children).forEach(el => el.classList.remove('active'));
-        }
-
-        function checkMatch() {
-            if (leftSelected < 0 || rightSelected < 0) return;
-            const leftCard = round[leftSelected];
-            const rightText = Array.from(rightCol.children)[rightSelected].textContent;
-            const ok = rightText === leftCard.en;
-            if (ok) {
-                Array.from(leftCol.children)[leftSelected].classList.add('correct');
-                Array.from(rightCol.children)[rightSelected].classList.add('correct');
-                Array.from(leftCol.children)[leftSelected].disabled = true;
-                Array.from(rightCol.children)[rightSelected].disabled = true;
-                matched++;
-                attempts++;
-                correctAttempts++;
-                pendingIndices.push(leftSelected);
-                pendingRightIndices.push(rightSelected);
-                matchedIndices.add(leftSelected);
-                matchedRightIndices.add(rightSelected);
-                clearActive();
-                const originalIndex = cards.findIndex(c => c.en === leftCard.en && c.de === leftCard.de);
-                if (originalIndex >= 0) used.add(originalIndex);
-                setProgress();
-                if (matched >= 3) {
-                    replaceAfterThree();
-                }
-                if (used.size >= cards.length) {
-                    showDone();
-                }
-            } else {
-                attempts++;
-                mistakes.push({
-                    en: leftCard.en,
-                    de: leftCard.de
-                });
-                const lEl = Array.from(leftCol.children)[leftSelected];
-                const rEl = Array.from(rightCol.children)[rightSelected];
-                clearActive();
-                isAnimatingWrong = true;
-                Array.from(leftCol.children).forEach(el => {
-                    if (el !== lEl) el.classList.add('no-anim')
-                });
-                Array.from(rightCol.children).forEach(el => {
-                    if (el !== rEl) el.classList.add('no-anim')
-                });
-                if (lEl) lEl.classList.add('wrong');
-                if (rEl) rEl.classList.add('wrong');
-                setTimeout(() => {
-                    try {
-                        if (lEl) lEl.classList.remove('wrong');
-                        if (rEl) rEl.classList.remove('wrong');
-                        Array.from(leftCol.children).forEach(el => el.classList.remove('no-anim'));
-                        Array.from(rightCol.children).forEach(el => el.classList.remove('no-anim'));
-                        isAnimatingWrong = false;
-                    } catch {
-                        Array.from(leftCol.children).forEach(el => el.classList.remove('no-anim'));
-                        Array.from(rightCol.children).forEach(el => el.classList.remove('no-anim'));
-                        isAnimatingWrong = false;
-                    }
-                }, 500);
-            }
-            leftSelected = -1;
-            rightSelected = -1;
-        }
-
-        function replaceAfterThree() {
-            const leftNodes = Array.from(leftCol.children);
-            const rightNodes = Array.from(rightCol.children);
-            const count = pendingIndices.length;
-            if (used.size >= cards.length) {
-                leftCol.innerHTML = '';
-                rightCol.innerHTML = '';
-                showDone();
-                return;
-            }
-            if (count === 0) {
-                if (used.size >= cards.length) {
-                    showDone();
-                }
-                return;
-            }
-            // fade out matched items only
-            for (let i = 0; i < count; i++) {
-                const lIdx = pendingIndices[i];
-                const rIdx = pendingRightIndices[i];
-                if (leftNodes[lIdx]) leftNodes[lIdx].classList.add('fade-out');
-                if (rightNodes[rIdx]) rightNodes[rIdx].classList.add('fade-out');
-            }
-            setTimeout(() => {
-                const availableIdx = [...cards.keys()].filter(i => !used.has(i));
-                const currentEn = new Set(round.filter((_, idx) => !pendingIndices.includes(idx)).map(c => (c.en || '').trim().toLowerCase()));
-                const newCards = [];
-                while (newCards.length < count && availableIdx.length) {
-                    const j = Math.floor(Math.random() * availableIdx.length);
-                    const idx = availableIdx.splice(j, 1)[0];
-                    const candidate = cards[idx];
-                    const key = (candidate.en || '').trim().toLowerCase();
-                    if (currentEn.has(key)) continue;
-                    currentEn.add(key);
-                    newCards.push(candidate);
-                }
-                // shuffle new cards and independently shuffle right indices to avoid predictable patterns
-                const shuffledNew = newCards.slice();
-                for (let i = shuffledNew.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [shuffledNew[i], shuffledNew[j]] = [shuffledNew[j], shuffledNew[i]];
-                }
-                const rightSlots = pendingRightIndices.slice();
-                for (let i = rightSlots.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [rightSlots[i], rightSlots[j]] = [rightSlots[j], rightSlots[i]];
-                }
-                for (let i = 0; i < count; i++) {
-                    const newCard = shuffledNew[i];
-                    if (!newCard) continue;
-                    const lIdx = pendingIndices[i];
-                    const rIdx = rightSlots[i];
-                    round[lIdx] = newCard;
-                    // left element
-                    const oldL = leftNodes[lIdx];
-                    const newL = document.createElement('button');
-                    if (showGermanLeft) {
-                        newL.className = 'pair-text w-full';
-                        newL.textContent = newCard.de;
-                        newL.addEventListener('click', () => {
-                            leftSelected = lIdx;
-                            updateSelection();
-                            checkMatch();
-                        });
-                    } else {
-                        newL.className = 'pair-btn w-full';
-                        newL.innerHTML = '<span class="material-symbols-outlined">volume_up</span>';
-                        newL.addEventListener('click', () => {
-                            play(newCard.de);
-                            leftSelected = lIdx;
-                            updateSelection();
-                            checkMatch();
-                        });
-                    }
-                    newL.classList.add('fade-in');
-                    oldL.replaceWith(newL);
-                    // right element
-                    const oldR = rightNodes[rIdx];
-                    const newR = document.createElement('button');
-                    newR.className = 'pair-text w-full';
-                    newR.textContent = newCard.en;
-                    newR.addEventListener('click', () => {
-                        rightSelected = rIdx;
-                        updateSelection(true, rIdx);
-                        checkMatch();
-                    });
-                    newR.classList.add('fade-in');
-                    oldR.replaceWith(newR);
-                    rightOrder[rIdx] = newCard.en;
-                }
-                setTimeout(() => {
-                    Array.from(leftCol.children).forEach(el => el.classList.remove('fade-in'));
-                    Array.from(rightCol.children).forEach(el => el.classList.remove('fade-in'));
-                }, 720);
-                matched = 0;
-                pendingIndices = [];
-                pendingRightIndices = [];
-                matchedIndices.clear();
-                matchedRightIndices.clear();
-                setProgress();
-                hydrateAudioLocal();
-                preloadRoundAudio();
-            }, 400);
-        }
-
-        function showDone() {
-            if (doneShown) return;
-            doneShown = true;
-            leftCol.innerHTML = '';
-            rightCol.innerHTML = '';
-            const secs = Math.max(0, Math.round((performance.now() - sessionStart) / 1000));
-            const mins = Math.floor(secs / 60);
-            const rem = secs % 60;
-            const acc = attempts > 0 ? Math.round((correctAttempts / attempts) * 100) : 100;
-            accValue.textContent = acc + '%';
-            timeValue.textContent = mins + 'm ' + rem + 's';
-            setProgress();
-            matchBody.hidden = true;
-            feedback.hidden = true;
-            completeOverlay.hidden = false;
-            reviewBtn.hidden = acc === 100;
-            reviewBtn.disabled = mistakes.length === 0;
-        }
-
-        function nextRound() {
-            if (used.size >= cards.length) {
-                showDone();
-                return;
-            }
-            pickRound();
-            renderRound();
-            setProgress();
-        }
-        // Cross-page cache
-        function getCache(key) {
-            try {
-                const d = sessionStorage.getItem(key);
-                return d ? JSON.parse(d) : null;
-            } catch {
-                return null;
-            }
-        }
-
-        function saveCache(key, data) {
-            try {
-                sessionStorage.setItem(key, JSON.stringify(data));
-            } catch {}
-        }
-
-        function initFromCache(name) {
-            const cached = getCache(`flashcard_cards_${name}`);
-            if (!cached || !Array.isArray(cached) || !cached.length) return false;
-            cards = cached;
-            originalCards = cards.slice();
-            used.clear();
-            pickRound();
-            renderRound();
-            setProgress();
-            try {
-                feedback.hidden = true;
-                feedback.textContent = '';
-            } catch {}
-            sessionStart = performance.now();
-            attempts = 0;
-            correctAttempts = 0;
-            mistakes = [];
-            doneShown = false;
-            matchBody.hidden = false;
-            completeOverlay.hidden = true;
-            return true;
-        }
-
-        async function loadCards(name) {
-            // Try instant load from cache
-            const showedFromCache = initFromCache(name);
-            if (!showedFromCache) showLoader();
-
-            try {
-                const resp = await fetch(`/cards?deck=${encodeURIComponent(name)}`);
-                const data = await resp.json();
-                saveCache(`flashcard_cards_${name}`, data);
-
-                if (!showedFromCache) {
-                    cards = Array.isArray(data) ? data : [];
-                    originalCards = cards.slice();
-                    used.clear();
-                    pickRound();
-                    renderRound();
-                    setProgress();
-                    try {
-                        feedback.hidden = true;
-                        feedback.textContent = '';
-                    } catch {}
-                    sessionStart = performance.now();
-                    attempts = 0;
-                    correctAttempts = 0;
-                    mistakes = [];
-                    doneShown = false;
-                    matchBody.hidden = false;
-                    completeOverlay.hidden = true;
-                }
-            } catch {
-                if (!showedFromCache) {
-                    cards = [];
-                    used.clear();
-                    leftCol.innerHTML = '';
-                    rightCol.innerHTML = '';
-                }
-            } finally {
-                hideLoader();
-            }
-        }
-        backBtn.addEventListener('click', () => {
-            history.length > 1 ? history.back() : location.href = '/'
-        });
-        homeBtn.addEventListener('click', () => {
-            location.href = '/'
-        });
-
-        function animateToggleSwap() {
-            const nodes = Array.from(leftCol.children);
-            nodes.forEach((oldEl, idx) => {
-                oldEl.classList.add('fade-out');
-            });
-            setTimeout(() => {
-                nodes.forEach((oldEl, idx) => {
-                    const c = round[idx];
-                    const newBtn = document.createElement('button');
-                    if (showGermanLeft) {
-                        newBtn.className = 'pair-text w-full';
-                        newBtn.textContent = c.de;
-                        newBtn.addEventListener('click', () => {
-                            leftSelected = idx;
-                            updateSelection();
-                            checkMatch();
-                        });
-                    } else {
-                        newBtn.className = 'pair-btn w-full';
-                        newBtn.innerHTML = '<span class="material-symbols-outlined">volume_up</span>';
-                        newBtn.addEventListener('click', () => {
-                            play(c.de);
-                            leftSelected = idx;
-                            updateSelection();
-                            checkMatch();
-                        });
-                    }
-                    if (matchedIndices.has(idx)) {
-                        newBtn.classList.add('correct');
-                        newBtn.disabled = true;
-                    }
-                    newBtn.classList.add('fade-in');
-                    oldEl.replaceWith(newBtn);
-                });
-                setTimeout(() => {
-                    Array.from(leftCol.children).forEach(el => el.classList.remove('fade-in'));
-                }, 720);
-            }, 360);
-        }
-        showGermanToggle.addEventListener('change', () => {
-            if (isAnimatingWrong) {
-                showGermanToggle.checked = !showGermanLeft;
-                return;
-            }
-            showGermanLeft = !showGermanToggle.checked;
-            try {
-                localStorage.setItem('matchShowGermanLeft', showGermanLeft ? '1' : '0');
-            } catch {}
-            animateToggleSwap();
-        });
-
-        function shouldClear(t) {
-            if (t.closest('.pair-btn,.pair-text')) return false;
-            if (t.closest('#showGermanToggle')) return false;
-            return true
-        }
-        document.addEventListener('click', (e) => {
-            if (isAnimatingWrong) return;
-            const t = e.target;
-            if (!shouldClear(t)) return;
-            clearActive();
-            leftSelected = -1;
-            rightSelected = -1;
-        });
-        // initialize toggle state
-        try {
-            const saved = localStorage.getItem('matchShowGermanLeft');
-            showGermanLeft = (saved == null) ? true : (saved === '1');
-        } catch {
-            showGermanLeft = true
-        }
-        showGermanToggle.checked = !showGermanLeft;
-        if (currentDeck) loadCards(currentDeck);
-        continueBtn.addEventListener('click', () => {
-            const fromParam = currentFolder ? `&from=${encodeURIComponent(currentFolder)}` : '';
-            window.location.href = `/spelling?deck=${encodeURIComponent(currentDeck)}${fromParam}`;
-        });
-        reviewBtn.addEventListener('click', () => {
-            if (reviewBtn.disabled) return;
-            const map = new Map();
-            mistakes.forEach(m => {
-                const k = (m.en || '') + '|' + (m.de || '');
-                if (!map.has(k)) map.set(k, m);
-            });
-            cards = Array.from(map.values()).map(m => ({
-                en: m.en,
-                de: m.de
-            }));
-            used.clear();
-            pendingIndices = [];
-            pendingRightIndices = [];
-            matchedIndices.clear();
-            matchedRightIndices.clear();
-            matched = 0;
-            sessionStart = performance.now();
-            attempts = 0;
-            correctAttempts = 0;
-            mistakes = [];
-            doneShown = false;
-            completeOverlay.hidden = true;
-            matchBody.hidden = false;
-            pickRound();
-            renderRound();
-            setProgress();
-        });
-    </script>
+    
+    <script src="/static/js/auth.js"></script>
+    <script src="/static/js/match.js"></script>
 </body>
 
 </html>

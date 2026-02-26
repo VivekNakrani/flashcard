@@ -1,9 +1,10 @@
 import json
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from fastapi import APIRouter, HTTPException
-from botocore.exceptions import ClientError
+from fastapi import APIRouter, HTTPException, Depends
 
 from models import FolderCreate, FolderRename, FolderDelete, FolderMove, FolderOrderUpdate
+from services.database import get_db
+from services.auth import get_current_user
 from services.storage import r2_client, R2_BUCKET_NAME
 from services.cache import get_cached, set_cached, invalidate_cache
 from utils import safe_deck_name as _safe_deck_name
@@ -13,447 +14,186 @@ router = APIRouter()
 # Cache TTL in seconds
 CACHE_TTL = 30
 
-# Key for the single folders file (combines index and order)
-def _folders_index_key() -> str:
-    return f"{R2_BUCKET_NAME}/folders/index.json"
 
-
-def _fetch_deck_index():
-    """Fetch csv/index.json from R2 (with caching)."""
-    cache_key = "folders:deck_index"
-    cached = get_cached(cache_key, CACHE_TTL)
-    if cached is not None:
-        return cached
-    try:
-        obj = r2_client.get_object(Bucket=R2_BUCKET_NAME, Key=f"{R2_BUCKET_NAME}/csv/index.json")
-        data = obj["Body"].read().decode("utf-8")
-        result = json.loads(data)
-        set_cached(cache_key, result)
-        return result
-    except Exception:
-        return []
-
-
-def _fetch_folders_index():
-    """Fetch folders/index.json from R2 (with caching).
-    
-    This single file now serves as both the list of folders AND their display order.
-    The order of items in the array determines display order.
-    """
-    cache_key = "folders:folders_index"
-    cached = get_cached(cache_key, CACHE_TTL)
-    if cached is not None:
-        return cached
-    try:
-        obj = r2_client.get_object(Bucket=R2_BUCKET_NAME, Key=_folders_index_key())
-        data = obj["Body"].read().decode("utf-8")
-        parsed = json.loads(data)
-        result = parsed if isinstance(parsed, list) else []
-        set_cached(cache_key, result)
-        return result
-    except Exception:
-        return []
-
-
-def _fetch_parents():
-    """Fetch folders/parents.json from R2 (with caching)."""
-    cache_key = "folders:parents"
-    cached = get_cached(cache_key, CACHE_TTL)
-    if cached is not None:
-        return cached
-    try:
-        obj = r2_client.get_object(Bucket=R2_BUCKET_NAME, Key=f"{R2_BUCKET_NAME}/folders/parents.json")
-        data = obj["Body"].read().decode("utf-8")
-        parsed = json.loads(data)
-        result = parsed if isinstance(parsed, dict) else {}
-        set_cached(cache_key, result)
-        return result
-    except Exception:
-        return {}
+# ---------------------------------------------------------------------------
+# ALL folder CRUD is Supabase-first, scoped to the requesting user_id.
+# The old R2-based index.json approach was a single global shared file —
+# meaning every user saw and modified the same folder list. That's gone.
+# ---------------------------------------------------------------------------
 
 
 @router.get("/folders")
-def get_folders():
-    if not r2_client or not R2_BUCKET_NAME:
-        raise HTTPException(status_code=400, detail="Cloudflare R2 is not configured")
-    
-    # Parallel R2 fetches (now only 3 instead of 4)
-    deck_index = []
-    folders_index = []  # This is now the ordered list
-    parents_data = {}
-    
-    with ThreadPoolExecutor(max_workers=3) as executor:
-        futures = {
-            executor.submit(_fetch_deck_index): "deck_index",
-            executor.submit(_fetch_folders_index): "folders_index",
-            executor.submit(_fetch_parents): "parents",
-        }
-        for future in as_completed(futures):
-            key = futures[future]
-            try:
-                result = future.result()
-                if key == "deck_index":
-                    deck_index = result if isinstance(result, list) else []
-                elif key == "folders_index":
-                    folders_index = result if isinstance(result, list) else []
-                elif key == "parents":
-                    parents_data = result if isinstance(result, dict) else {}
-            except Exception:
-                pass
-    
-    # Count decks per folder
-    counts = {}
-    folders_from_decks = set()
-    for d in deck_index:
-        if isinstance(d, dict):
-            f = d.get("folder") or "Uncategorized"
-            folders_from_decks.add(f)
-            counts[f] = counts.get(f, 0) + 1
-    
-    # Collect all parent folders from parents_data
-    parent_folders = set(parents_data.values())
-    
-    # Build ordered list from folders_index (preserving order)
-    ordered = []
-    seen = set()
-    
-    # First, add folders in the order they appear in folders_index
-    for f in folders_index:
-        if isinstance(f, str) and f not in seen:
+def get_folders(user_id: str = Depends(get_current_user)):
+    """Return all folders for the current user with deck counts, sorted by order_index."""
+    try:
+        db = get_db()
+
+        # Fetch this user's folders from Supabase sorted by order_index
+        folders_res = db.table("folders").select("*").eq("user_id", user_id).order("order_index").execute()
+        folders_data = folders_res.data or []
+
+        # Fetch this user's decks to compute per-folder counts
+        decks_res = db.table("decks").select("folder_id").eq("user_id", user_id).execute()
+        decks_data = decks_res.data or []
+
+        # Count decks per folder_id
+        counts = {}
+        for d in decks_data:
+            fid = d.get("folder_id")
+            if fid:
+                counts[fid] = counts.get(fid, 0) + 1
+
+        ordered = []
+        for f in folders_data:
+            name = f.get("name", "")
             ordered.append({
-                "name": f, 
-                "count": counts.get(f, 0), 
-                "parent": parents_data.get(f)
+                "name": name,
+                "count": counts.get(name, 0),
+                "parent": f.get("parent_id"),
             })
-            seen.add(f)
-    
-    # Then add any folders that exist in decks but not in the index
-    for f in sorted(folders_from_decks):
-        if f not in seen:
-            ordered.append({
-                "name": f, 
-                "count": counts.get(f, 0), 
-                "parent": parents_data.get(f)
-            })
-            seen.add(f)
-    
-    # Also add parent folders that are referenced but not in the list (e.g., "A1")
-    for f in sorted(parent_folders):
-        if f and f not in seen:
-            ordered.insert(0, {  # Insert at beginning since parent folders are usually top-level
-                "name": f, 
-                "count": counts.get(f, 0), 
-                "parent": parents_data.get(f)
-            })
-            seen.add(f)
-    
-    return {"folders": ordered}
+
+        return {"folders": ordered}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {e}")
+
+
+@router.get("/folder")
+def get_folder(name: str, user_id: str = Depends(get_current_user)):
+    """Return a single folder's details for the current user."""
+    try:
+        db = get_db()
+        result = db.table("folders").select("*").eq("name", name).eq("user_id", user_id).execute()
+        if not result.data:
+            return {"name": name, "parent": None, "count": 0}
+        f = result.data[0]
+
+        # Count decks in this folder
+        decks_res = db.table("decks").select("id").eq("folder_id", name).eq("user_id", user_id).execute()
+        count = len(decks_res.data or [])
+
+        return {"name": f.get("name"), "parent": f.get("parent_id"), "count": count}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {e}")
 
 
 @router.post("/folder/create")
-def folder_create(payload: FolderCreate):
-    if not r2_client or not R2_BUCKET_NAME:
-        raise HTTPException(status_code=400, detail="Cloudflare R2 is not configured")
+def folder_create(payload: FolderCreate, user_id: str = Depends(get_current_user)):
     name = _safe_deck_name(payload.name)
     if not name:
         raise HTTPException(status_code=400, detail="Folder name required")
-    
-    key = _folders_index_key()
-    items = []
+
     try:
-        obj = r2_client.get_object(Bucket=R2_BUCKET_NAME, Key=key)
-        data = obj["Body"].read().decode("utf-8")
-        parsed = json.loads(data)
-        if isinstance(parsed, list):
-            items = parsed
-    except Exception:
-        pass
-    
-    # Append new folder at the end (preserving order)
-    if name not in items:
-        items.append(name)
-    
-    r2_client.put_object(
-        Bucket=R2_BUCKET_NAME, 
-        Key=key, 
-        Body=json.dumps(items).encode("utf-8"), 
-        ContentType="application/json"
-    )
-    invalidate_cache("folders:")
-    return {"ok": True, "name": name}
+        db = get_db()
+        # Check if already exists for this user
+        existing = db.table("folders").select("id").eq("name", name).eq("user_id", user_id).execute()
+        if not existing.data:
+            # Get max order_index to append
+            max_res = db.table("folders").select("order_index").eq("user_id", user_id).order("order_index", desc=True).limit(1).execute()
+            next_idx = (max_res.data[0]["order_index"] + 1) if max_res.data else 0
+            
+            db.table("folders").insert({
+                "name": name,
+                "user_id": user_id,
+                "order_index": next_idx
+            }).execute()
+        invalidate_cache(f"folders:{user_id}")
+        return {"ok": True, "name": name}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {e}")
 
 
 @router.post("/folder/rename")
-def folder_rename(payload: FolderRename):
-    if not r2_client or not R2_BUCKET_NAME:
-        raise HTTPException(status_code=400, detail="Cloudflare R2 is not configured")
+def folder_rename(payload: FolderRename, user_id: str = Depends(get_current_user)):
     old = _safe_deck_name(payload.old_name)
     new = _safe_deck_name(payload.new_name)
     if not old or not new:
         raise HTTPException(status_code=400, detail="Folder name required")
-    
-    key = _folders_index_key()
-    items = []
+
     try:
-        obj = r2_client.get_object(Bucket=R2_BUCKET_NAME, Key=key)
-        data = obj["Body"].read().decode("utf-8")
-        parsed = json.loads(data)
-        if isinstance(parsed, list):
-            items = parsed
-    except Exception:
-        pass
-    
-    # Rename in place to preserve order
-    if old in items:
-        items = [new if x == old else x for x in items]
-    elif new not in items:
-        items.append(new)
-    
-    r2_client.put_object(
-        Bucket=R2_BUCKET_NAME, 
-        Key=key, 
-        Body=json.dumps(items).encode("utf-8"), 
-        ContentType="application/json"
-    )
-    
-    # Update deck index (folder references in decks)
-    idx_key = f"{R2_BUCKET_NAME}/csv/index.json"
-    try:
-        idx_obj = r2_client.get_object(Bucket=R2_BUCKET_NAME, Key=idx_key)
-        idx_data = idx_obj["Body"].read().decode("utf-8")
-        parsed = json.loads(idx_data)
-        if isinstance(parsed, list):
-            for d in parsed:
-                if isinstance(d, dict) and (d.get("folder") or "") == old:
-                    d["folder"] = new
-            r2_client.put_object(
-                Bucket=R2_BUCKET_NAME, 
-                Key=idx_key, 
-                Body=json.dumps(parsed).encode("utf-8"), 
-                ContentType="application/json"
-            )
-    except Exception:
-        pass
-    
-    # Update folder parents when renaming
-    parents_key = f"{R2_BUCKET_NAME}/folders/parents.json"
-    try:
-        parents_data = {}
-        try:
-            pobj = r2_client.get_object(Bucket=R2_BUCKET_NAME, Key=parents_key)
-            pdata = pobj["Body"].read().decode("utf-8")
-            parsed_p = json.loads(pdata)
-            if isinstance(parsed_p, dict):
-                parents_data = parsed_p
-        except Exception:
-            pass
-        
-        updated = False
-        # If the renamed folder had a parent, update its key
-        if old in parents_data:
-            parents_data[new] = parents_data.pop(old)
-            updated = True
-        # If any folder had old as parent, update to new
-        for k, v in list(parents_data.items()):
-            if v == old:
-                parents_data[k] = new
-                updated = True
-        if updated:
-            r2_client.put_object(
-                Bucket=R2_BUCKET_NAME, 
-                Key=parents_key, 
-                Body=json.dumps(parents_data).encode("utf-8"), 
-                ContentType="application/json"
-            )
-    except Exception:
-        pass
-    
-    invalidate_cache("folders:")
-    return {"ok": True, "old_name": old, "new_name": new}
+        db = get_db()
+        # Rename folder in Supabase (scoped to user)
+        db.table("folders").update({"name": new}).eq("name", old).eq("user_id", user_id).execute()
+
+        # Update parent_id references (child folders that pointed to old name)
+        db.table("folders").update({"parent_id": new}).eq("parent_id", old).eq("user_id", user_id).execute()
+
+        # Update folder_id on decks belonging to this user
+        db.table("decks").update({"folder_id": new}).eq("folder_id", old).eq("user_id", user_id).execute()
+
+        invalidate_cache(f"folders:{user_id}")
+        return {"ok": True, "old_name": old, "new_name": new}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {e}")
 
 
 @router.delete("/folder/delete")
-def folder_delete(payload: FolderDelete):
-    if not r2_client or not R2_BUCKET_NAME:
-        raise HTTPException(status_code=400, detail="Cloudflare R2 is not configured")
+def folder_delete(payload: FolderDelete, user_id: str = Depends(get_current_user)):
     name = _safe_deck_name(payload.name)
     if not name:
         raise HTTPException(status_code=400, detail="Folder name required")
-    
-    key = _folders_index_key()
-    items = []
+
     try:
-        obj = r2_client.get_object(Bucket=R2_BUCKET_NAME, Key=key)
-        data = obj["Body"].read().decode("utf-8")
-        parsed = json.loads(data)
-        if isinstance(parsed, list):
-            items = [x for x in parsed if x != name]
-        r2_client.put_object(
-            Bucket=R2_BUCKET_NAME, 
-            Key=key, 
-            Body=json.dumps(items).encode("utf-8"), 
-            ContentType="application/json"
-        )
-    except Exception:
-        pass
-    
-    # Update deck index (remove folder from decks)
-    idx_key = f"{R2_BUCKET_NAME}/csv/index.json"
-    try:
-        idx_obj = r2_client.get_object(Bucket=R2_BUCKET_NAME, Key=idx_key)
-        idx_data = idx_obj["Body"].read().decode("utf-8")
-        parsed = json.loads(idx_data)
-        if isinstance(parsed, list):
-            for d in parsed:
-                if isinstance(d, dict) and (d.get("folder") or "") == name:
-                    d.pop("folder", None)
-            r2_client.put_object(
-                Bucket=R2_BUCKET_NAME, 
-                Key=idx_key, 
-                Body=json.dumps(parsed).encode("utf-8"), 
-                ContentType="application/json"
-            )
-    except Exception:
-        pass
-    
-    # Clean up folder parents when deleting
-    parents_key = f"{R2_BUCKET_NAME}/folders/parents.json"
-    try:
-        parents_data = {}
-        try:
-            pobj = r2_client.get_object(Bucket=R2_BUCKET_NAME, Key=parents_key)
-            pdata = pobj["Body"].read().decode("utf-8")
-            parsed_p = json.loads(pdata)
-            if isinstance(parsed_p, dict):
-                parents_data = parsed_p
-        except Exception:
-            pass
-        
-        updated = False
-        # Remove the deleted folder's parent entry
-        if name in parents_data:
-            del parents_data[name]
-            updated = True
-        # Remove parent reference for any child folders (move them to root)
-        for k, v in list(parents_data.items()):
-            if v == name:
-                del parents_data[k]
-                updated = True
-        if updated:
-            r2_client.put_object(
-                Bucket=R2_BUCKET_NAME, 
-                Key=parents_key, 
-                Body=json.dumps(parents_data).encode("utf-8"), 
-                ContentType="application/json"
-            )
-    except Exception:
-        pass
-    
-    invalidate_cache("folders:")
-    return {"ok": True, "deleted": name}
+        db = get_db()
+        # Remove folder (scoped to user)
+        db.table("folders").delete().eq("name", name).eq("user_id", user_id).execute()
+
+        # Move decks in this folder back to root (null folder)
+        db.table("decks").update({"folder_id": None}).eq("folder_id", name).eq("user_id", user_id).execute()
+
+        # Detach any child folders from this parent
+        db.table("folders").update({"parent_id": None}).eq("parent_id", name).eq("user_id", user_id).execute()
+
+        invalidate_cache(f"folders:{user_id}")
+        return {"ok": True, "deleted": name}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {e}")
 
 
 @router.post("/folder/move")
-def folder_move(payload: FolderMove):
-    """Move a folder to be a child of another folder (nested folders)."""
-    if not r2_client or not R2_BUCKET_NAME:
-        raise HTTPException(status_code=400, detail="Cloudflare R2 is not configured")
+def folder_move(payload: FolderMove, user_id: str = Depends(get_current_user)):
+    """Set a folder's parent (nested folders)."""
     name = _safe_deck_name(payload.name)
     if not name:
         raise HTTPException(status_code=400, detail="Folder name required")
     parent = _safe_deck_name(payload.parent) if payload.parent else None
-    
-    # Prevent moving folder into itself or its descendants
+
     if parent and parent == name:
         raise HTTPException(status_code=400, detail="Cannot move folder into itself")
-    
-    # Read folder parents data
-    parents_key = f"{R2_BUCKET_NAME}/folders/parents.json"
-    parents_data = {}
+
     try:
-        obj = r2_client.get_object(Bucket=R2_BUCKET_NAME, Key=parents_key)
-        data = obj["Body"].read().decode("utf-8")
-        parsed = json.loads(data)
-        if isinstance(parsed, dict):
-            parents_data = parsed
-    except Exception:
-        pass
-    
-    # Check for circular reference: walk up from parent to ensure name is not an ancestor
-    if parent:
-        current = parent
-        visited = set()
-        while current:
-            if current == name:
-                raise HTTPException(status_code=400, detail="Cannot move folder into its own descendant")
-            if current in visited:
-                break
-            visited.add(current)
-            current = parents_data.get(current)
-    
-    # Update parent
-    if parent:
-        parents_data[name] = parent
-    else:
-        parents_data.pop(name, None)
-    
-    r2_client.put_object(
-        Bucket=R2_BUCKET_NAME,
-        Key=parents_key,
-        Body=json.dumps(parents_data).encode("utf-8"),
-        ContentType="application/json"
-    )
-    
-    invalidate_cache("folders:")
-    return {"ok": True, "name": name, "parent": parent}
+        db = get_db()
+        db.table("folders").update({"parent_id": parent}).eq("name", name).eq("user_id", user_id).execute()
+        invalidate_cache(f"folders:{user_id}")
+        return {"ok": True, "name": name, "parent": parent}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {e}")
 
 
 @router.get("/order/folders")
-def order_folders_get():
-    """Get the folder order (same as folders index since they are combined)."""
-    if not r2_client or not R2_BUCKET_NAME:
-        raise HTTPException(status_code=400, detail="Cloudflare R2 is not configured")
-    
-    # Check cache first
-    cache_key = "folders:folders_index"
-    cached = get_cached(cache_key, CACHE_TTL)
-    if cached is not None:
-        return cached
-    
+def order_folders_get(user_id: str = Depends(get_current_user)):
+    """Return folder names in order for the current user (from Supabase)."""
     try:
-        obj = r2_client.get_object(Bucket=R2_BUCKET_NAME, Key=_folders_index_key())
-        data = obj["Body"].read().decode("utf-8")
-        arr = json.loads(data)
-        if isinstance(arr, list):
-            set_cached(cache_key, arr)
-            return arr
-        return []
-    except ClientError as e:
-        code = e.response.get("Error", {}).get("Code")
-        if code in ("404", "NoSuchKey", "NotFound"):
-            return []
-        raise HTTPException(status_code=500, detail=str(e))
+        db = get_db()
+        result = db.table("folders").select("name").eq("user_id", user_id).order("order_index").execute()
+        names = [f["name"] for f in (result.data or []) if f.get("name")]
+        return names
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"Database error: {e}")
 
 
 @router.post("/order/folders")
-def order_folders_set(payload: FolderOrderUpdate):
-    """Set the folder order (updates the combined index file)."""
-    if not r2_client or not R2_BUCKET_NAME:
-        raise HTTPException(status_code=400, detail="Cloudflare R2 is not configured")
-    
-    names = [_safe_deck_name(x) for x in (payload.order or []) if _safe_deck_name(x)]
-    
+def order_folders_set(payload: FolderOrderUpdate, user_id: str = Depends(get_current_user)):
+    """Set the order_index for folders based on drag-and-drop order."""
     try:
-        # Save the new order to the single folders index file
-        r2_client.put_object(
-            Bucket=R2_BUCKET_NAME, 
-            Key=_folders_index_key(), 
-            Body=json.dumps(names).encode("utf-8"), 
-            ContentType="application/json"
-        )
-        invalidate_cache("folders:")
+        db = get_db()
+        names = [ _safe_deck_name(x) for x in (payload.order or []) if _safe_deck_name(x) ]
+        
+        for idx, name in enumerate(names):
+            db.table("folders").update({"order_index": idx}).eq("name", name).eq("user_id", user_id).execute()
+            
+        invalidate_cache(f"folders:{user_id}")
         return {"ok": True, "order": names}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"Database error: {e}")
+

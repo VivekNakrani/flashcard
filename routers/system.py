@@ -3,9 +3,8 @@ import os
 import re
 import json
 import csv
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import StreamingResponse
-from gtts import gTTS
 from botocore.exceptions import ClientError
 
 from models import AudioRebuildRequest
@@ -15,6 +14,7 @@ from services.storage import (
     lines_key as _lines_key
 )
 from utils import safe_tts_key as _safe_tts_key_util, safe_deck_name as _safe_deck_name
+from services.auth import get_current_user
 
 router = APIRouter()
 
@@ -30,13 +30,14 @@ ALLOWED_KEY_PREFIXES = [
     "order/",
     "folders/",
     "pdf/",
+    "users/",
 ]
 
 def _safe_tts_key(text: str, lang: str = "de") -> str:
     return _safe_tts_key_util(text, R2_BUCKET_NAME, lang)
 
 @router.get("/r2/health")
-def r2_health():
+def r2_health(user_id: str = Depends(get_current_user)):
     """Simple health endpoint for R2 configuration diagnostics (no secrets)."""
     return {
         "configured": bool(r2_client and R2_BUCKET_NAME),
@@ -110,6 +111,8 @@ def r2_get(key: str):
         raise HTTPException(status_code=403, detail="Access to this key is not allowed")
     
     try:
+        # Use the original full key for the R2 call,
+        # as the bucket name is prefixing the key in this deployment's object store.
         obj = r2_client.get_object(Bucket=R2_BUCKET_NAME, Key=key)
         stream = obj["Body"]
         content_type = obj.get("ContentType", "application/octet-stream")
@@ -121,25 +124,19 @@ def r2_get(key: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/audio/cleanup")
-def audio_cleanup(dry_run: bool = False):
+def audio_cleanup(dry_run: bool = False, user_id: str = Depends(get_current_user)):
+    """Cleanup orphaned TTS audio files by checking all valid decks in the database."""
+    from services.database import get_db
+    db = get_db()
+    
     if not r2_client or not R2_BUCKET_NAME:
         raise HTTPException(status_code=400, detail="Cloudflare R2 is not configured")
+        
     try:
         valid_texts = set()
-        idx_key = f"{R2_BUCKET_NAME}/csv/index.json"
-        decks = []
-        try:
-            idx_obj = r2_client.get_object(Bucket=R2_BUCKET_NAME, Key=idx_key)
-            idx_data = idx_obj["Body"].read().decode("utf-8")
-            parsed = json.loads(idx_data)
-            if isinstance(parsed, list):
-                decks = parsed
-        except ClientError as e:
-            code = e.response.get("Error", {}).get("Code")
-            if code not in ("404", "NoSuchKey", "NotFound"):
-                raise HTTPException(status_code=500, detail=str(e))
-        except Exception:
-            decks = []
+        # 1. Fetch all decks from Supabase (system-wide cleanup)
+        res = db.table("decks").select("name, r2_key").execute()
+        decks = res.data or []
 
         for d in decks:
             if not isinstance(d, dict):

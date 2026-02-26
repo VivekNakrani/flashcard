@@ -4,6 +4,7 @@
 
 <head>
     <meta charset="utf-8" />
+
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <meta name="color-scheme" content="light" />
     <meta name="theme-color" content="#ffffff" />
@@ -15,7 +16,8 @@
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link href="https://fonts.googleapis.com" rel="preconnect" />
     <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
-    <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&amp;display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&amp;display=swap"
+        rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
     <script id="tailwind-config">
         tailwind.config = {
@@ -47,116 +49,9 @@
             },
         }
     </script>
-    <style>
-         :root {
-            --loading-dot-size: 8px;
-            --loading-dot-gap: 8px;
-            --loading-animation-duration: 1000ms;
-        }
-        
-        .material-symbols-outlined {
-            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-        }
-        
-        body {
-            min-height: max(884px, 100dvh);
-        }
-        
-        .loading-overlay {
-            position: fixed;
-            inset: 0;
-            z-index: 5;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            background: rgba(255, 255, 255, 0.6);
-            transition: opacity 0.2s ease;
-        }
-        
-        .loading-overlay.is-active {
-            display: flex;
-        }
-        
-        .loading-dots {
-            display: flex;
-            gap: var(--loading-dot-gap);
-            color: #8E8E93;
-        }
-        
-        .loading-dots span {
-            width: var(--loading-dot-size);
-            height: var(--loading-dot-size);
-            border-radius: 50%;
-            background: currentColor;
-            opacity: 0.5;
-            animation: dotPulse var(--loading-animation-duration) infinite ease-in-out;
-            will-change: transform, opacity;
-        }
-        
-        .loading-dots span:nth-child(2) {
-            animation-delay: 150ms;
-        }
-        
-        .loading-dots span:nth-child(3) {
-            animation-delay: 300ms;
-        }
-        
-        @keyframes dotPulse {
-            0% {
-                transform: scale(1);
-                opacity: 0.35;
-            }
-            50% {
-                transform: scale(1.25);
-                opacity: 1;
-            }
-            100% {
-                transform: scale(1);
-                opacity: 0.35;
-            }
-        }
-        
-        @media (prefers-color-scheme: dark) {
-            .loading-dots {
-                color: #92adc9;
-            }
-            .loading-overlay {
-                background: rgba(0, 0, 0, 0.6);
-            }
-        }
-        
-        .study-card {
-            user-select: none;
-            cursor: pointer;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-            will-change: transform;
-        }
-        
-        .study-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-        }
-        
-        @media (prefers-color-scheme: dark) {
-            .study-card:hover {
-                box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
-            }
-        }
-    </style>
-    <style>
-        html {
-            color-scheme: light;
-        }
-        
-        @media (prefers-color-scheme: dark) {
-            .loading-overlay {
-                background: rgba(255, 255, 255, 0.6) !important;
-            }
-            .loading-dots {
-                color: #8E8E93 !important;
-            }
-        }
-    </style>
+    
+    
+    <link rel="stylesheet" href="/static/css/hi.css">
 </head>
 
 <body class="bg-background-light dark:bg-background-dark font-display">
@@ -164,22 +59,34 @@
         <!-- Main container -->
         <div class="flex-1 pb-24">
             <!-- Top App Bar -->
-            <header class="sticky top-0 z-10 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-sm border-b border-slate-200 dark:border-slate-800">
+            <header
+                class="sticky top-0 z-10 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-sm border-b border-slate-200 dark:border-slate-800">
                 <div class="mx-auto max-w-4xl px-3 py-2 flex items-center border-b border-slate-200/70">
-                    <button id="backBtn" class="flex h-8 w-8 items-center justify-center rounded-full text-text-primary-light dark:text-text-primary-dark"><span class="material-symbols-outlined text-xl">arrow_back</span></button>
-                    <h1 id="deckTitle" class="flex-1 h-8 flex items-center justify-center text-base font-bold tracking-tight text-text-primary-light dark:text-text-primary-dark truncate">Deck</h1>
-                    <button id="addWordBtn" class="flex h-8 w-8 items-center justify-center rounded-full text-text-primary-light dark:text-text-primary-dark" aria-label="Add word">
+                    <button id="backBtn"
+                        class="flex h-8 w-8 items-center justify-center rounded-full text-text-primary-light dark:text-text-primary-dark"><span
+                            class="material-symbols-outlined text-xl">arrow_back</span></button>
+                    <h1 id="deckTitle"
+                        class="flex-1 h-8 flex items-center justify-center text-base font-bold tracking-tight text-text-primary-light dark:text-text-primary-dark truncate">
+                        Deck</h1>
+                    <button id="addWordBtn"
+                        class="flex h-8 w-8 items-center justify-center rounded-full text-text-primary-light dark:text-text-primary-dark"
+                        aria-label="Add word">
                         <span class="material-symbols-outlined text-xl">add</span>
                     </button>
-                    <button id="homeBtn" class="flex h-8 w-8 items-center justify-center rounded-full text-text-primary-light dark:text-text-primary-dark" aria-label="Home">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-5 w-5">
-                        <path d="M3 10.5L12 3l9 7.5" />
-                        <path d="M5 10v9h14v-9" />
-                        <path d="M9 19v-6h6v6" />
-                    </svg>
-                </button>
+                    <button id="homeBtn"
+                        class="flex h-8 w-8 items-center justify-center rounded-full text-text-primary-light dark:text-text-primary-dark"
+                        aria-label="Home">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" class="h-5 w-5">
+                            <path d="M3 10.5L12 3l9 7.5" />
+                            <path d="M5 10v9h14v-9" />
+                            <path d="M9 19v-6h6v6" />
+                        </svg>
+                    </button>
                 </div>
-                <div id="pathBar" class="mx-auto max-w-4xl px-3 py-1 text-xs text-text-secondary-light dark:text-text-secondary-dark" style="display:none;">
+                <div id="pathBar"
+                    class="mx-auto max-w-4xl px-3 py-1 text-xs text-text-secondary-light dark:text-text-secondary-dark"
+                    style="display:none;">
                     <span id="pathText"></span>
                 </div>
             </header>
@@ -192,7 +99,9 @@
             </main>
             <section id="studySection" class="mx-auto max-w-4xl p-4 hidden">
                 <div class="flex flex-col items-center">
-                    <div id="studyCard" class="study-card w-full max-w-md rounded-xl bg-card-light dark:bg-card-dark p-10 text-center text-2xl font-bold text-text-primary-light dark:text-text-primary-dark"></div>
+                    <div id="studyCard"
+                        class="study-card w-full max-w-md rounded-xl bg-card-light dark:bg-card-dark p-10 text-center text-2xl font-bold text-text-primary-light dark:text-text-primary-dark">
+                    </div>
                     <div class="mt-6 flex gap-4">
                         <button id="studyWrong" class="h-11 rounded-full bg-destructive px-6 text-white">Wrong</button>
                         <button id="studyRight" class="h-11 rounded-full bg-primary px-6 text-white">Right</button>
@@ -205,12 +114,15 @@
 
         <!-- Row actions popup for long-press on a word -->
         <div id="cardActionMenu" class="fixed inset-0 z-30 hidden">
-            <div id="cardActionMenuPanel" class="absolute min-w-[190px] rounded-xl bg-card-light dark:bg-card-dark shadow-xl border border-slate-200 dark:border-slate-700 py-1">
-                <button id="cardActionEdit" class="flex w-full items-center gap-3 px-4 py-2 text-sm text-text-primary-light dark:text-text-primary-dark hover:bg-slate-100 dark:hover:bg-slate-800">
+            <div id="cardActionMenuPanel"
+                class="absolute min-w-[190px] rounded-xl bg-card-light dark:bg-card-dark shadow-xl border border-slate-200 dark:border-slate-700 py-1">
+                <button id="cardActionEdit"
+                    class="flex w-full items-center gap-3 px-4 py-2 text-sm text-text-primary-light dark:text-text-primary-dark hover:bg-slate-100 dark:hover:bg-slate-800">
                     <span class="material-symbols-outlined text-base">edit</span>
                     <span>Edit word</span>
                 </button>
-                <button id="cardActionDelete" class="flex w-full items-center gap-3 px-4 py-2 text-sm text-destructive hover:bg-red-50 dark:hover:bg-red-500/10">
+                <button id="cardActionDelete"
+                    class="flex w-full items-center gap-3 px-4 py-2 text-sm text-destructive hover:bg-red-50 dark:hover:bg-red-500/10">
                     <span class="material-symbols-outlined text-base">delete</span>
                     <span>Delete word</span>
                 </button>
@@ -222,761 +134,25 @@
             <div class="w-full max-w-sm rounded-xl bg-background-light dark:bg-card-dark p-5 shadow-xl">
                 <h2 class="text-base font-semibold text-text-primary-light dark:text-text-primary-dark">Edit word</h2>
                 <div class="mt-3 space-y-3">
-                    <input id="editDe" type="text" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-text-primary-light dark:border-slate-700 dark:bg-background-dark dark:text-text-primary-dark" placeholder="German" />
-                    <input id="editEn" type="text" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-text-primary-light dark:border-slate-700 dark:bg-background-dark dark:text-text-primary-dark" placeholder="English" />
+                    <input id="editDe" type="text"
+                        class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-text-primary-light dark:border-slate-700 dark:bg-background-dark dark:text-text-primary-dark"
+                        placeholder="German" />
+                    <input id="editEn" type="text"
+                        class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-text-primary-light dark:border-slate-700 dark:bg-background-dark dark:text-text-primary-dark"
+                        placeholder="English" />
                 </div>
                 <div class="mt-4 grid grid-cols-2 gap-3">
-                    <button id="editCancel" class="h-10 rounded-lg border border-slate-300 bg-white text-sm font-medium text-text-primary-light dark:border-slate-700 dark:bg-background-dark dark:text-text-primary-dark">Cancel</button>
-                    <button id="editSave" class="h-10 rounded-lg bg-primary text-sm font-medium text-white">Save</button>
+                    <button id="editCancel"
+                        class="h-10 rounded-lg border border-slate-300 bg-white text-sm font-medium text-text-primary-light dark:border-slate-700 dark:bg-background-dark dark:text-text-primary-dark">Cancel</button>
+                    <button id="editSave"
+                        class="h-10 rounded-lg bg-primary text-sm font-medium text-white">Save</button>
                 </div>
             </div>
         </div>
     </div>
-    <script>
-        const backBtn = document.getElementById('backBtn');
-        const deckTitle = document.getElementById('deckTitle');
-        const homeBtn = document.getElementById('homeBtn');
-        const listMain = document.getElementById('listMain');
-        const cardGrid = document.getElementById('cardGrid');
-        const studySection = document.getElementById('studySection');
-        const studyCard = document.getElementById('studyCard');
-        const studyWrong = document.getElementById('studyWrong');
-        const studyRight = document.getElementById('studyRight');
-        const studySpeak = document.getElementById('studySpeak');
-        const globalLoader = document.getElementById('globalLoader');
-        const appHeader = document.querySelector('header');
-        const cardActionMenu = document.getElementById('cardActionMenu');
-        const cardActionMenuPanel = document.getElementById('cardActionMenuPanel');
-        const cardActionEdit = document.getElementById('cardActionEdit');
-        const cardActionDelete = document.getElementById('cardActionDelete');
-        const editModal = document.getElementById('editModal');
-        const editDe = document.getElementById('editDe');
-        const editEn = document.getElementById('editEn');
-        const editCancel = document.getElementById('editCancel');
-        const editSave = document.getElementById('editSave');
-        const addWordBtn = document.getElementById('addWordBtn');
-        let isAddingNewWord = false;
-
-        function showLoader() {
-            if (globalLoader) globalLoader.classList.add('is-active');
-            if (appHeader) appHeader.classList.remove('backdrop-blur-sm');
-        }
-
-        function hideLoader() {
-            if (globalLoader) globalLoader.classList.remove('is-active');
-            if (appHeader) appHeader.classList.add('backdrop-blur-sm');
-        }
-        const params = new URLSearchParams(location.search);
-        let deck = params.get('deck') || '';
-        const from = params.get('from') || '';
-        if (deck) deckTitle.textContent = deck;
-        let cards = [];
-        let queue = [];
-        let current = null;
-        let showingFront = true;
-        const frontLang = 'de';
-        const backLang = 'en';
-        const audioPlayer = new Audio();
-        const audioCache = new Map();
-        const MAX_CACHE_SIZE = 50;
-        const LONG_PRESS_DURATION = 300;
-        const RENAME_TITLE_LONG_PRESS = 500;
-        let longPressTimer = null;
-        let suppressNextClickFromLongPress = false;
-        let editingIndex = -1;
-        let renameTitlePressTimer = null;
-        let audioStatsInitialized = false;
-
-        function ensureAudioStatsEl() {
-            if (!cardGrid) return null;
-            let el = cardGrid.querySelector('[data-audio-stats="1"]');
-            if (!el) {
-                el = document.createElement('div');
-                el.dataset.audioStats = '1';
-                el.className = 'mt-3 text-sm text-text-secondary-light dark:text-text-secondary-dark';
-                cardGrid.appendChild(el);
-            }
-            return el;
-        }
-
-        function updateAudioStats() {
-            if (!Array.isArray(cards) || !cards.length) {
-                const el = cardGrid && cardGrid.querySelector('[data-audio-stats="1"]');
-                if (el) el.textContent = '';
-                return;
-            }
-            const total = cards.length;
-            let available = 0;
-            cards.forEach(c => {
-                const text = c && c.de;
-                if (!text) return;
-                const cacheKey = `audio:de:${text}`;
-                if (audioCache.has(text)) {
-                    available++;
-                    return;
-                }
-                try {
-                    if (localStorage.getItem(cacheKey)) available++;
-                } catch {}
-            });
-            const el = ensureAudioStatsEl();
-            if (!el) return;
-            el.textContent = `Words: ${total} • Audio ready: ${available}`;
-        }
-
-        function cleanupAudioCache() {
-            if (audioCache.size > MAX_CACHE_SIZE) {
-                const entries = Array.from(audioCache.entries());
-                const toRemove = entries.slice(0, entries.length - MAX_CACHE_SIZE);
-                toRemove.forEach(([key, url]) => {
-                    if (url.startsWith('blob:')) {
-                        URL.revokeObjectURL(url);
-                    }
-                    audioCache.delete(key);
-                });
-            }
-        }
-
-        function clearRenameTitlePressTimer() {
-            if (renameTitlePressTimer) {
-                clearTimeout(renameTitlePressTimer);
-                renameTitlePressTimer = null;
-            }
-        }
-
-        function sanitizeDeckName(n) {
-            return (n || '').trim().replace(/[^a-zA-Z0-9_\-]+/g, '_').substring(0, 50);
-        }
-
-        async function handleDeckTitleRename() {
-            if (!deck) return;
-            const current = deck || '';
-            const input = prompt('Rename deck', current);
-            if (input == null) return;
-            const newName = sanitizeDeckName(input);
-            if (!newName || newName === deck) return;
-            showLoader();
-            try {
-                const resp = await fetch('/deck/rename', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        old_name: deck,
-                        new_name: newName
-                    })
-                });
-                const out = await resp.json().catch(() => ({
-                    ok: false
-                }));
-                if (!resp.ok || !out.ok) {
-                    alert(out && out.detail ? out.detail : 'Failed to rename deck');
-                    return;
-                }
-                const oldDeck = deck;
-                deck = newName;
-                if (deckTitle) deckTitle.textContent = newName;
-                try {
-                    sessionStorage.removeItem(`flashcard_cards_${oldDeck}`);
-                } catch {}
-                try {
-                    const url = new URL(window.location.href);
-                    url.searchParams.set('deck', newName);
-                    window.history.replaceState({}, '', url.toString());
-                } catch {}
-            } catch (e) {
-                alert(String(e && e.message ? e.message : e || 'Failed to rename deck'));
-            } finally {
-                hideLoader();
-            }
-        }
-        const eventListeners = [];
-
-        function addEventListenerWithCleanup(element, event, handler) {
-            element.addEventListener(event, handler);
-            eventListeners.push({
-                element,
-                event,
-                handler
-            });
-        }
-
-        function clearLongPressTimer() {
-            if (longPressTimer) {
-                clearTimeout(longPressTimer);
-                longPressTimer = null;
-            }
-        }
-
-        function openCardActionMenuForRow(row, clientX, clientY) {
-            if (!cardActionMenu || !cardActionMenuPanel || !row) return;
-            const index = parseInt(row.dataset.index || '-1', 10);
-            if (Number.isNaN(index) || index < 0 || index >= cards.length) return;
-            editingIndex = index;
-
-            cardActionMenu.classList.remove('hidden');
-
-            const viewportW = window.innerWidth || document.documentElement.clientWidth || 0;
-            const viewportH = window.innerHeight || document.documentElement.clientHeight || 0;
-            const approxWidth = 210;
-            const approxHeight = 96;
-
-            let x = clientX;
-            let y = clientY;
-
-            if (typeof x !== 'number' || typeof y !== 'number') {
-                const rect = row.getBoundingClientRect();
-                x = rect.right - approxWidth;
-                y = rect.bottom + 8;
-            }
-
-            if (x + approxWidth > viewportW - 8) x = viewportW - approxWidth - 8;
-            if (y + approxHeight > viewportH - 8) y = viewportH - approxHeight - 8;
-            if (x < 8) x = 8;
-            if (y < 8) y = 8;
-
-            cardActionMenuPanel.style.left = `${x}px`;
-            cardActionMenuPanel.style.top = `${y}px`;
-        }
-
-        function closeCardActionMenu() {
-            if (cardActionMenu) {
-                cardActionMenu.classList.add('hidden');
-            }
-        }
-
-        function cleanupEventListeners() {
-            eventListeners.forEach(({
-                element,
-                event,
-                handler
-            }) => {
-                element.removeEventListener(event, handler);
-            });
-            eventListeners.length = 0;
-        }
-
-        addEventListenerWithCleanup(backBtn, 'click', () => {
-            if (from) location.href = `/folder?name=${encodeURIComponent(from)}`;
-            else location.href = '/';
-        });
-
-        addEventListenerWithCleanup(homeBtn, 'click', () => {
-            location.href = '/';
-        });
-
-        if (addWordBtn) {
-            addEventListenerWithCleanup(addWordBtn, 'click', () => {
-                isAddingNewWord = true;
-                editingIndex = -1;
-                editDe.value = '';
-                editEn.value = '';
-                const modalTitle = editModal.querySelector('h2');
-                if (modalTitle) modalTitle.textContent = 'Add word';
-                editModal.classList.remove('hidden');
-            });
-        }
-
-        if (deckTitle) {
-            addEventListenerWithCleanup(deckTitle, 'pointerdown', () => {
-                if (!deck) return;
-                clearRenameTitlePressTimer();
-                renameTitlePressTimer = setTimeout(() => {
-                    renameTitlePressTimer = null;
-                    handleDeckTitleRename();
-                }, RENAME_TITLE_LONG_PRESS);
-            });
-            ['pointerup', 'pointerleave', 'pointercancel'].forEach(evt => {
-                addEventListenerWithCleanup(deckTitle, evt, () => {
-                    clearRenameTitlePressTimer();
-                });
-            });
-        }
-        // Cross-page cache
-        function getCache(key) {
-            try {
-                const d = sessionStorage.getItem(key);
-                return d ? JSON.parse(d) : null;
-            } catch {
-                return null;
-            }
-        }
-
-        function saveCache(key, data) {
-            try {
-                sessionStorage.setItem(key, JSON.stringify(data));
-            } catch {}
-        }
-
-        async function loadDeck() {
-            if (!deck) {
-                cardGrid.innerHTML = '<div class="col-span-1 sm:col-span-2 lg:col-span-3 mt-10 text-center text-text-secondary-light dark:text-text-secondary-dark">No deck selected</div>';
-                return;
-            }
-
-            // Try instant load from cache
-            let showedFromCache = false;
-            const cached = getCache(`flashcard_cards_${deck}`);
-            if (cached && Array.isArray(cached) && cached.length) {
-                cards = cached;
-                renderGrid();
-                showedFromCache = true;
-            } else {
-                showLoader();
-            }
-
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 10000);
-
-            try {
-                const response = await fetch(`/cards?deck=${encodeURIComponent(deck)}`, {
-                    signal: controller.signal,
-                    headers: {
-                        'Accept': 'application/json',
-                        'Cache-Control': 'no-cache'
-                    }
-                });
-
-                clearTimeout(timeoutId);
-
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-
-                const data = await response.json();
-                saveCache(`flashcard_cards_${deck}`, data);
-
-                if (!showedFromCache) {
-                    cards = Array.isArray(data) ? data : [];
-                    renderGrid();
-                }
-
-                if (cards.length) {
-                    try {
-                        if ('requestIdleCallback' in window) {
-                            requestIdleCallback(() => {
-                                preloadDeckAudio().catch(() => {});
-                            });
-                        } else {
-                            setTimeout(() => {
-                                preloadDeckAudio().catch(() => {});
-                            }, 300);
-                        }
-                    } catch {
-                        preloadDeckAudio().catch(() => {});
-                    }
-                }
-
-            } catch (error) {
-                if (!showedFromCache) {
-                    if (error.name === 'AbortError') {
-                        console.warn('Deck loading timed out');
-                        cardGrid.innerHTML = '<div class="mt-10 text-center text-text-secondary-light dark:text-text-secondary-dark">Loading timed out. Please try again.</div>';
-                    } else {
-                        console.error('Failed to load deck:', error);
-                        cards = [];
-                        cardGrid.innerHTML = '<div class="mt-10 text-center text-text-secondary-light dark:text-text-secondary-dark">Failed to load deck</div>';
-                    }
-                }
-            } finally {
-                hideLoader();
-            }
-        }
-
-        function renderGrid() {
-            if (!cards.length) {
-                cardGrid.innerHTML = '<div class="mt-10 text-center text-text-secondary-light dark:text-text-secondary-dark">This deck is empty</div>';
-                return;
-            }
-
-            const table = document.createElement('table');
-            table.className = 'w-full table-fixed border-collapse bg-card-light dark:bg-card-dark rounded-xl overflow-hidden shadow-sm';
-            const tbody = document.createElement('tbody');
-            table.appendChild(tbody);
-
-            cardGrid.innerHTML = '';
-            cardGrid.appendChild(table);
-            const batchSize = 50;
-            let index = 0;
-
-            function appendBatch() {
-                const fragment = document.createDocumentFragment();
-                const end = Math.min(index + batchSize, cards.length);
-                for (; index < end; index++) {
-                    const c = cards[index];
-                    const tr = document.createElement('tr');
-                    tr.className = 'hover:bg-slate-50 dark:hover:bg-slate-800/40 cursor-pointer';
-                    tr.dataset.text = c.de || '';
-                    tr.dataset.index = String(index);
-
-                    const tdDe = document.createElement('td');
-                    tdDe.className = 'align-middle px-3 py-2 text-[15px] font-medium text-text-primary-light dark:text-text-primary-dark border-r border-slate-300 dark:border-slate-700 border-b border-slate-300 dark:border-slate-700 break-words';
-                    tdDe.textContent = c.de;
-
-                    const tdEn = document.createElement('td');
-                    tdEn.className = 'align-middle px-3 py-2 text-[15px] text-text-secondary-light dark:text-text-secondary-dark border-b border-slate-300 dark:border-slate-700 break-words';
-                    tdEn.textContent = c.en;
-
-                    tr.appendChild(tdDe);
-                    tr.appendChild(tdEn);
-                    fragment.appendChild(tr);
-                }
-                tbody.appendChild(fragment);
-                if (index < cards.length) {
-                    requestAnimationFrame(appendBatch);
-                } else {
-                    updateAudioStats();
-                }
-            }
-
-            appendBatch();
-        }
-
-        function hydrateAudioFromLocalStorage() {
-            if (!Array.isArray(cards) || !cards.length) return;
-            cards.forEach(c => {
-                const text = c && c.de;
-                if (!text) return;
-                const key = `audio:de:${text}`;
-                const val = localStorage.getItem(key);
-                if (val) audioCache.set(text, val);
-            });
-            updateAudioStats();
-        }
-
-        function removeAudioCacheForWord(text) {
-            if (!text) return;
-            try {
-                const val = audioCache.get(text);
-                if (val && typeof val === 'string' && val.startsWith('blob:')) {
-                    try {
-                        URL.revokeObjectURL(val);
-                    } catch {}
-                }
-                audioCache.delete(text);
-            } catch {}
-            try {
-                localStorage.removeItem(`audio:de:${text}`);
-            } catch {}
-        }
-
-        function preloadAudioForWord(text) {
-            if (!text) return Promise.resolve();
-            const url = `/tts?text=${encodeURIComponent(text)}&lang=de`;
-            return fetchAudioAndCache(text, url);
-        }
-
-        async function saveDeckSilent() {
-            if (!deck) return;
-            try {
-                const content = cards.map(r => `${r.en},${r.de}`).join('\n');
-                await fetch('/deck/update', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        name: deck,
-                        content
-                    })
-                }).then(r => r.json()).catch(() => ({}));
-            } catch {
-                // ignore errors; UI already updated
-            }
-        }
-        async function preloadDeckAudio() {
-            if (!deck) return;
-
-            try {
-                const resp = await fetch(`/preload_deck_audio?deck=${encodeURIComponent(deck)}`);
-                if (!resp.ok) return;
-
-                const data = await resp.json();
-                if (!data || !data.audio_urls) return;
-
-                const entries = Object.entries(data.audio_urls);
-                const tasks = entries.map(([text, url]) => fetchAudioAndCache(text, url));
-
-                await Promise.allSettled(tasks);
-
-                const allTexts = Array.isArray(cards) ? cards.map(c => c && c.de).filter(Boolean) : [];
-                const missing = allTexts.filter((text) => {
-                    const cacheKey = `audio:de:${text}`;
-                    return !audioCache.has(text) && !localStorage.getItem(cacheKey);
-                });
-
-                if (missing.length) {
-                    const extraTasks = missing.map((text) => preloadAudioForWord(text));
-                    await Promise.allSettled(extraTasks);
-                }
-                updateAudioStats();
-            } catch (error) {
-                console.warn('Audio preloading failed:', error);
-            }
-        }
-
-        async function fetchAudioAndCache(text, url) {
-            const cacheKey = `audio:de:${text}`;
-            if (audioCache.has(text) || localStorage.getItem(cacheKey)) return;
-            try {
-                const response = await fetch(url);
-                if (!response.ok) return;
-                const blob = await response.blob();
-                const objUrl = URL.createObjectURL(blob);
-                cleanupAudioCache();
-                audioCache.set(text, objUrl);
-                try {
-                    const base64 = await blobToBase64(blob);
-                    localStorage.setItem(cacheKey, base64);
-                } catch (storageError) {
-                    // Keep in-memory cache even if persistent storage fails
-                    console.warn('Storage quota exceeded for audio cache');
-                }
-            } catch (error) {
-                console.warn(`Failed to cache audio for "${text}":`, error);
-            }
-        }
-
-        function blobToBase64(blob) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onloadend = () => resolve(reader.result);
-                reader.onerror = reject;
-                reader.readAsDataURL(blob);
-            });
-        }
-
-        function startStudy() {
-            if (!cards.length) return;
-            queue = cards.slice();
-            showingFront = true;
-            nextCard();
-            listMain.classList.add('hidden');
-            studySection.classList.remove('hidden');
-        }
-
-        function nextCard() {
-            if (!queue.length) {
-                studyCard.textContent = 'All done';
-                return;
-            }
-            current = queue.shift();
-            showingFront = true;
-            studyCard.textContent = current[frontLang];
-            autoPlay();
-        }
-
-        function flip() {
-            if (!current) return;
-            studyCard.textContent = showingFront ? current[backLang] : current[frontLang];
-            showingFront = !showingFront;
-        }
-        async function speak(text) {
-            if (!text) return;
-
-            try {
-                audioPlayer.pause();
-                audioPlayer.currentTime = 0;
-
-                const cacheKey = `audio:de:${text}`;
-                const stored = localStorage.getItem(cacheKey);
-                if (stored && !audioCache.has(text)) {
-                    audioCache.set(text, stored);
-                }
-
-                if (audioCache.has(text)) {
-                    audioPlayer.src = audioCache.get(text);
-                    await audioPlayer.play();
-                    return;
-                }
-
-                const resp = await fetch(`/tts?text=${encodeURIComponent(text)}&lang=de`);
-                if (resp.ok) {
-                    const blob = await resp.blob();
-                    const url = URL.createObjectURL(blob);
-
-                    cleanupAudioCache();
-                    audioCache.set(text, url);
-                    audioPlayer.src = url;
-                    await audioPlayer.play();
-                }
-            } catch (error) {
-                console.warn('Audio playback failed:', error);
-            }
-        }
-
-        function autoPlay() {
-            if (frontLang === 'de' && current && current.de) setTimeout(() => speak(current.de), 120);
-        }
-        addEventListenerWithCleanup(studyCard, 'click', flip);
-
-        addEventListenerWithCleanup(cardGrid, 'pointerdown', (e) => {
-            const tr = e.target.closest('tr');
-            if (!tr) return;
-            clearLongPressTimer();
-            suppressNextClickFromLongPress = false;
-            const point = e.touches && e.touches.length ? e.touches[0] : e;
-            const clientX = point.clientX;
-            const clientY = point.clientY;
-            longPressTimer = setTimeout(() => {
-                suppressNextClickFromLongPress = true;
-                openCardActionMenuForRow(tr, clientX, clientY);
-            }, LONG_PRESS_DURATION);
-        });
-
-        ['pointerup', 'pointerleave', 'pointercancel'].forEach(evt => {
-            addEventListenerWithCleanup(cardGrid, evt, () => {
-                clearLongPressTimer();
-            });
-        });
-
-        addEventListenerWithCleanup(cardGrid, 'click', (e) => {
-            if (suppressNextClickFromLongPress) {
-                suppressNextClickFromLongPress = false;
-                return;
-            }
-            const tr = e.target.closest('tr');
-            const text = tr ? tr.dataset.text : undefined;
-            if (text) speak(text);
-        });
-
-        if (cardActionEdit) {
-            addEventListenerWithCleanup(cardActionEdit, 'click', () => {
-                closeCardActionMenu();
-                if (editingIndex < 0 || editingIndex >= cards.length) return;
-                isAddingNewWord = false;
-                const c = cards[editingIndex];
-                editDe.value = c.de || '';
-                editEn.value = c.en || '';
-                const modalTitle = editModal.querySelector('h2');
-                if (modalTitle) modalTitle.textContent = 'Edit word';
-                editModal.classList.remove('hidden');
-            });
-        }
-
-        if (cardActionDelete) {
-            addEventListenerWithCleanup(cardActionDelete, 'click', async() => {
-                closeCardActionMenu();
-                if (editingIndex < 0 || editingIndex >= cards.length) return;
-                const removed = cards.splice(editingIndex, 1)[0];
-                renderGrid();
-                // Also update study queue so Learn mode stays in sync
-                queue = cards.slice();
-                current = queue.length ? queue[0] : null;
-                showingFront = true;
-                renderGrid();
-                await saveDeckSilent();
-            });
-        }
-
-        if (editCancel && editModal) {
-            addEventListenerWithCleanup(editCancel, 'click', () => {
-                editModal.classList.add('hidden');
-                isAddingNewWord = false;
-            });
-            addEventListenerWithCleanup(editModal, 'click', (e) => {
-                if (e.target === editModal) {
-                    editModal.classList.add('hidden');
-                    isAddingNewWord = false;
-                }
-            });
-        }
-
-        if (editSave) {
-            addEventListenerWithCleanup(editSave, 'click', async() => {
-                const newDe = (editDe.value || '').trim();
-                const newEn = (editEn.value || '').trim();
-                if (!newDe || !newEn) return;
-
-                let prevDe = '';
-
-                if (isAddingNewWord) {
-                    // Adding a new word
-                    cards.unshift({
-                        en: newEn,
-                        de: newDe
-                    });
-                } else {
-                    // Editing existing word
-                    if (editingIndex < 0 || editingIndex >= cards.length) return;
-                    prevDe = (cards[editingIndex] && cards[editingIndex].de) || '';
-                    cards[editingIndex] = {
-                        en: newEn,
-                        de: newDe
-                    };
-                }
-
-                editModal.classList.add('hidden');
-                isAddingNewWord = false;
-                renderGrid();
-                queue = cards.slice();
-                current = queue.length ? queue[0] : null;
-                showingFront = true;
-
-                // Persist deck changes (also updates R2 audio for added/removed words)
-                await saveDeckSilent();
-
-                // Clear any cached audio for the old and new words
-                if (prevDe && prevDe !== newDe) {
-                    removeAudioCacheForWord(prevDe);
-                }
-                removeAudioCacheForWord(newDe);
-
-                // Ask backend to rebuild audio for this word so R2 and cache stay in sync
-                try {
-                    await fetch('/audio/rebuild', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            text: newDe,
-                            lang: 'de',
-                            old_text: prevDe && prevDe !== newDe ? prevDe : null
-                        })
-                    }).then(r => r.json()).catch(() => ({}));
-                } catch {}
-
-                // Preload fresh audio for the updated word
-                try {
-                    await preloadAudioForWord(newDe);
-                    updateAudioStats();
-                } catch {}
-            });
-        }
-
-        if (cardActionMenu) {
-            addEventListenerWithCleanup(cardActionMenu, 'click', (e) => {
-                if (e.target === cardActionMenu) {
-                    closeCardActionMenu();
-                }
-            });
-        }
-        addEventListenerWithCleanup(studyWrong, 'click', () => {
-            if (current) queue.push(current);
-            nextCard();
-        });
-        addEventListenerWithCleanup(studyRight, 'click', () => {
-            nextCard();
-        });
-        addEventListenerWithCleanup(studySpeak, 'click', () => {
-            if (current && current.de) speak(current.de);
-        });
-
-        window.addEventListener('beforeunload', cleanupEventListeners);
-
-        async function initializeApp() {
-            try {
-                await loadDeck();
-                hydrateAudioFromLocalStorage();
-            } catch (error) {
-                console.error('App initialization failed:', error);
-            }
-        }
-
-        initializeApp();
-    </script>
+    
+    <script src="/static/js/auth.js"></script>
+    <script src="/static/js/hi.js"></script>
 </body>
 
 </html>

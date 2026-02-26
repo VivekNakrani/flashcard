@@ -1,16 +1,16 @@
 import json
 import io
 import csv
-import threading
 import re
 import time
+import logging
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor
 from pydantic import BaseModel
 
-from fastapi import APIRouter, HTTPException, UploadFile, File
+from fastapi import APIRouter, HTTPException, UploadFile, File, Depends
 from fastapi.responses import StreamingResponse
-from gtts import gTTS
+from gtts import gTTS  # kept as fallback reference
 from botocore.exceptions import ClientError
 
 from models import CustomStoryRequest, TextStoryRequest
@@ -21,18 +21,19 @@ from services.storage import (
     story_audio_prefix as _story_audio_prefix,
     get_stories_index,
     update_stories_index,
-    remove_from_stories_index,
-    stories_index_key
+    remove_from_stories_index
 )
 from services.ai import (
     generate_story as _gemini_generate_story, 
     generate_custom_story as _gemini_generate_custom_story,
     generate_subtitle_story as _gemini_generate_subtitle_story,
 )
-from services.audio import generate_story_audio_background
 from services.cache import get_cached, set_cached, invalidate_cache
 from services.deck_service import get_cards as _get_cards_from_service
+from services.auth import get_current_user
 from utils import safe_deck_name as _safe_deck_name
+
+logger = logging.getLogger(__name__)
 
 
 class YoutubeStoryRequest(BaseModel):
@@ -41,9 +42,28 @@ class YoutubeStoryRequest(BaseModel):
     story_id: str | None = None
 
 router = APIRouter()
-def _get_cards_helper(deck: str):
+
+
+def _dispatch_story_audio(deck_id: str, segments: list, user_id: str):
+    """Dispatch story audio generation to Celery, with thread fallback."""
+    try:
+        from tasks.audio import generate_story_audio
+        generate_story_audio.apply_async(args=[deck_id, segments, user_id])
+    except Exception as exc:
+        # Fallback: run in a daemon thread if Celery/Redis is unavailable
+        logger.warning("Celery unavailable, falling back to thread: %s", exc)
+        from services.audio import generate_story_audio_background
+        import threading
+        t = threading.Thread(
+            target=generate_story_audio_background,
+            args=(deck_id, segments),
+            kwargs={"user_id": user_id},
+            daemon=True,
+        )
+        t.start()
+
     """Get cards for a deck using the shared deck service."""
-    return _get_cards_from_service(deck)
+    return _get_cards_from_service(deck, user_id)
 
 def _rebuild_stories_index_internal():
     if not r2_client or not R2_BUCKET_NAME:
@@ -125,27 +145,26 @@ def _rebuild_stories_index_internal():
         return []
 
 @router.post("/stories/rebuild-index")
-def rebuild_stories_index():
+def rebuild_stories_index(user_id: str = Depends(get_current_user)):
     stories = _rebuild_stories_index_internal()
     invalidate_cache("stories_list")
     return {"ok": True, "count": len(stories)}
 
 @router.get("/stories/list")
-def list_stories():
-    """List all available generated stories using index."""
-    cached = get_cached("stories_list", 60)
+def list_stories(user_id: str = Depends(get_current_user)):
+    """List all available generated stories for the current user."""
+    cached = get_cached(f"stories_list:{user_id}", 60)
     if cached:
         return {"stories": cached}
     
-    stories = get_stories_index()
-    if not stories:
-        stories = _rebuild_stories_index_internal()
+    stories = get_stories_index(user_id)
+    # The new DB-backed get_stories_index(user_id) returns data for this user
     
-    set_cached("stories_list", stories)
+    set_cached(f"stories_list:{user_id}", stories)
     return {"stories": stories}
 
 @router.get("/story/generate")
-def generate_story(deck: str, refresh: bool = False):
+def generate_story(deck: str, refresh: bool = False, user_id: str = Depends(get_current_user)):
     """Generate or retrieve a narrative story for a deck."""
     safe = _safe_deck_name(deck)
     if not safe:
@@ -153,9 +172,9 @@ def generate_story(deck: str, refresh: bool = False):
 
     # Check cache first (unless refresh requested)
     if not refresh and r2_client and R2_BUCKET_NAME:
-        # Try new structure first: stories/{deck}/story.json
+        # 1. Try user-scoped path: stories/users/{user_id}/{deck}/story.json
         try:
-            key = _story_key(deck)
+            key = _story_key(deck, user_id)
             obj = r2_client.get_object(Bucket=R2_BUCKET_NAME, Key=key)
             data = obj["Body"].read().decode("utf-8")
             cached = json.loads(data)
@@ -167,8 +186,21 @@ def generate_story(deck: str, refresh: bool = False):
                 raise HTTPException(status_code=500, detail=str(e))
         except Exception:
             pass
-        
-        # Try old structure for backwards compatibility: stories/{deck}.json
+
+        # 2. Backwards compat: old shared path without user namespace stories/{deck}/story.json
+        try:
+            legacy_key = _story_key(deck)  # no user_id → old shared path
+            obj = r2_client.get_object(Bucket=R2_BUCKET_NAME, Key=legacy_key)
+            data = obj["Body"].read().decode("utf-8")
+            cached = json.loads(data)
+            if cached and cached.get("segments"):
+                return {"story": cached, "cached": True}
+        except ClientError:
+            pass
+        except Exception:
+            pass
+
+        # 3. Even older format: stories/{deck}.json
         try:
             old_key = f"{R2_BUCKET_NAME}/stories/{safe}.json"
             obj = r2_client.get_object(Bucket=R2_BUCKET_NAME, Key=old_key)
@@ -181,10 +213,16 @@ def generate_story(deck: str, refresh: bool = False):
         except Exception:
             pass
 
-    # Get deck cards
+    # Get deck cards — only real decks (with a CSV) can be regenerated
     try:
-        cards = _get_cards_helper(deck)
-    except HTTPException:
+        cards = _get_cards_helper(deck, user_id)
+    except HTTPException as e:
+        if e.status_code == 404:
+            # No CSV exists: this is a text/custom/youtube story whose cache is gone
+            raise HTTPException(
+                status_code=404,
+                detail="Story not found — please regenerate it"
+            )
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -195,7 +233,7 @@ def generate_story(deck: str, refresh: bool = False):
     # If refreshing, delete old audio files first
     if refresh and r2_client and R2_BUCKET_NAME:
         try:
-            prefix = _story_audio_prefix(deck)
+            prefix = _story_audio_prefix(deck, user_id)
             continuation = None
             while True:
                 kwargs = {"Bucket": R2_BUCKET_NAME, "Prefix": prefix}
@@ -226,7 +264,7 @@ def generate_story(deck: str, refresh: bool = False):
     # Cache the story
     if r2_client and R2_BUCKET_NAME:
         try:
-            key = _story_key(deck)
+            key = _story_key(deck, user_id)
             r2_client.put_object(
                 Bucket=R2_BUCKET_NAME,
                 Key=key,
@@ -239,6 +277,7 @@ def generate_story(deck: str, refresh: bool = False):
         # Update stories index
         if story and isinstance(story, dict):
              meta = {
+                 "user_id": user_id,
                  "key": key,
                  "deck": _safe_deck_name(deck),
                  "last_modified": datetime.now().isoformat(),
@@ -248,19 +287,14 @@ def generate_story(deck: str, refresh: bool = False):
              }
              update_stories_index(meta)
 
-    # Generate audio in background
+    # Dispatch audio generation to Celery worker
     if story and story.get("segments"):
-        thread = threading.Thread(
-            target=generate_story_audio_background,
-            args=(deck, story["segments"]),
-            daemon=True
-        )
-        thread.start()
+        _dispatch_story_audio(deck, story["segments"], user_id)
 
     return {"story": story, "cached": False}
 
 @router.post("/story/generate/custom")
-def generate_custom_story(payload: CustomStoryRequest):
+def generate_custom_story(payload: CustomStoryRequest, user_id: str = Depends(get_current_user)):
     """Generate a story based on a custom topic."""
     topic = (payload.topic or "").strip()
     if not topic:
@@ -288,7 +322,7 @@ def generate_custom_story(payload: CustomStoryRequest):
     # Cache the story
     if r2_client and R2_BUCKET_NAME:
         try:
-            key = f"{R2_BUCKET_NAME}/stories/{safe_id}/story.json"
+            key = f"{R2_BUCKET_NAME}/stories/users/{user_id}/{safe_id}/story.json"
             r2_client.put_object(
                 Bucket=R2_BUCKET_NAME,
                 Key=key,
@@ -301,7 +335,8 @@ def generate_custom_story(payload: CustomStoryRequest):
         # Update stories index
         if story and isinstance(story, dict):
              meta = {
-                 "key": f"{R2_BUCKET_NAME}/stories/{safe_id}/story.json",
+                 "user_id": user_id,
+                 "key": key,
                  "deck": safe_id,
                  "last_modified": datetime.now().isoformat(),
                  "title_de": story.get("title_de"),
@@ -310,20 +345,15 @@ def generate_custom_story(payload: CustomStoryRequest):
              }
              update_stories_index(meta)
 
-    # Generate audio in background
+    # Dispatch audio generation to Celery worker
     if story and story.get("segments"):
-        thread = threading.Thread(
-            target=generate_story_audio_background,
-            args=(safe_id, story["segments"]),
-            daemon=True
-        )
-        thread.start()
+        _dispatch_story_audio(safe_id, story["segments"], user_id)
     
     return {"story": story, "story_id": safe_id}
 
 
 @router.post("/story/from_text")
-def story_from_text(payload: TextStoryRequest):
+def story_from_text(payload: TextStoryRequest, user_id: str = Depends(get_current_user)):
     text = (payload.text or "").strip()
     if not text:
         raise HTTPException(status_code=400, detail="Text is required")
@@ -380,7 +410,7 @@ def story_from_text(payload: TextStoryRequest):
 
     if r2_client and R2_BUCKET_NAME:
         try:
-            key = _story_key(safe_id)
+            key = _story_key(safe_id, user_id)
             r2_client.put_object(
                 Bucket=R2_BUCKET_NAME,
                 Key=key,
@@ -388,6 +418,7 @@ def story_from_text(payload: TextStoryRequest):
                 ContentType="application/json",
             )
             meta = {
+                "user_id": user_id,
                 "key": key,
                 "deck": safe_id,
                 "last_modified": datetime.now().isoformat(),
@@ -403,6 +434,7 @@ def story_from_text(payload: TextStoryRequest):
             thread = threading.Thread(
                 target=generate_story_audio_background,
                 args=(safe_id, story["segments"]),
+                kwargs={"user_id": user_id},
                 daemon=True,
             )
             thread.start()
@@ -410,7 +442,7 @@ def story_from_text(payload: TextStoryRequest):
     return {"story": story, "story_id": safe_id}
 
 @router.delete("/story/delete")
-def delete_story(deck: str):
+def delete_story(deck: str, user_id: str = Depends(get_current_user)):
     """Delete a generated story and all its audio files."""
     if not r2_client or not R2_BUCKET_NAME:
         raise HTTPException(status_code=400, detail="Cloudflare R2 is not configured")
@@ -454,7 +486,7 @@ def delete_story(deck: str):
     except Exception:
         pass
     
-    remove_from_stories_index(deck)
+    remove_from_stories_index(deck, user_id)
     invalidate_cache("stories_list")
     
     return {
@@ -465,14 +497,18 @@ def delete_story(deck: str):
     }
 
 @router.get("/story/audio")
-def get_story_audio(deck: str, text: str):
+def get_story_audio(deck: str, text: str, user_id: str = Depends(get_current_user)):
     """Get or generate audio for a story segment."""
     if not r2_client or not R2_BUCKET_NAME:
         # Fallback to regular TTS
         try:
-            buf = io.BytesIO()
-            gTTS(text=text, lang="de").write_to_fp(buf)
-            return StreamingResponse(io.BytesIO(buf.getvalue()), media_type="audio/mpeg")
+            from services.tts import tts_service
+            audio_bytes = tts_service.generate(text=text, lang="de")
+            return StreamingResponse(
+                io.BytesIO(audio_bytes),
+                media_type="audio/mpeg",
+                headers={"Cache-Control": "public, max-age=86400"},
+            )
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
     
@@ -480,7 +516,7 @@ def get_story_audio(deck: str, text: str):
     if not safe:
         raise HTTPException(status_code=400, detail="Invalid deck name")
     
-    key = _story_audio_key(deck, text)
+    key = _story_audio_key(deck, text, user_id)
     
     # Try to get from cache
     try:
@@ -493,9 +529,8 @@ def get_story_audio(deck: str, text: str):
     
     # Generate and cache
     try:
-        buf = io.BytesIO()
-        gTTS(text=text, lang="de").write_to_fp(buf)
-        audio_data = buf.getvalue()
+        from services.tts import tts_service
+        audio_data = tts_service.generate(text=text, lang="de")
         
         # Save to R2
         r2_client.put_object(
@@ -578,7 +613,7 @@ def _parse_srt(content: str):
 
 
 @router.post("/story/upload_srt")
-async def upload_srt(file: UploadFile = File(...), level: str = "A2"):
+async def upload_srt(file: UploadFile = File(...), level: str = "A2", user_id: str = Depends(get_current_user)):
     try:
         raw = await file.read()
         try:
@@ -649,7 +684,7 @@ async def upload_srt(file: UploadFile = File(...), level: str = "A2"):
 
     if r2_client and R2_BUCKET_NAME:
         try:
-            key = _story_key(story_id)
+            key = _story_key(story_id, user_id)
             r2_client.put_object(
                 Bucket=R2_BUCKET_NAME,
                 Key=key,
@@ -657,6 +692,7 @@ async def upload_srt(file: UploadFile = File(...), level: str = "A2"):
                 ContentType="application/json",
             )
             meta = {
+                "user_id": user_id,
                 "key": key,
                 "deck": story_id,
                 "last_modified": datetime.now().isoformat(),
@@ -668,13 +704,9 @@ async def upload_srt(file: UploadFile = File(...), level: str = "A2"):
         except Exception:
             pass
 
+        # Dispatch audio generation to Celery worker
         if story.get("segments"):
-            thread = threading.Thread(
-                target=generate_story_audio_background,
-                args=(story_id, story["segments"]),
-                daemon=True,
-            )
-            thread.start()
+            _dispatch_story_audio(story_id, story["segments"], user_id)
 
     return {"story": story, "story_id": story_id}
 
@@ -684,7 +716,7 @@ async def upload_srt(file: UploadFile = File(...), level: str = "A2"):
 # ---------------------------------------------------------------------------
 
 @router.post("/story/retranslate")
-def story_retranslate(payload: dict):
+def story_retranslate(payload: dict, user_id: str = Depends(get_current_user)):
     """Re-run subtitle AI translation on an existing story using its German lines."""
     story_id = (payload.get("story_id") or "").strip()
     level = (payload.get("level") or "A2").upper()
@@ -697,7 +729,7 @@ def story_retranslate(payload: dict):
         raise HTTPException(status_code=503, detail="R2 storage not configured")
 
     # Load the existing story
-    key = _story_key(story_id)
+    key = _story_key(story_id, user_id)
     try:
         resp = r2_client.get_object(Bucket=R2_BUCKET_NAME, Key=key)
         existing = json.loads(resp["Body"].read())
@@ -862,7 +894,7 @@ def _merge_transcript_chunks(chunks: list[dict], max_chars: int = 120) -> list[s
 
 
 @router.post("/story/from_youtube")
-def story_from_youtube(payload: YoutubeStoryRequest):
+def story_from_youtube(payload: YoutubeStoryRequest, user_id: str = Depends(get_current_user)):
     """Extract German subtitles from a YouTube video and generate a story."""
     url = (payload.url or "").strip()
     if not url:
@@ -961,7 +993,7 @@ def story_from_youtube(payload: YoutubeStoryRequest):
     # Save to R2
     if r2_client and R2_BUCKET_NAME:
         try:
-            key = _story_key(safe_id)
+            key = _story_key(safe_id, user_id)
             r2_client.put_object(
                 Bucket=R2_BUCKET_NAME,
                 Key=key,
@@ -969,6 +1001,7 @@ def story_from_youtube(payload: YoutubeStoryRequest):
                 ContentType="application/json",
             )
             meta = {
+                "user_id": user_id,
                 "key": key,
                 "deck": safe_id,
                 "last_modified": datetime.now().isoformat(),
@@ -984,6 +1017,7 @@ def story_from_youtube(payload: YoutubeStoryRequest):
             thread = threading.Thread(
                 target=generate_story_audio_background,
                 args=(safe_id, story["segments"]),
+                kwargs={"user_id": user_id},
                 daemon=True,
             )
             thread.start()

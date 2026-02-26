@@ -1,0 +1,11 @@
+﻿python : INFO:     Started server process [5964]
+At line:1 char:1
++ python app.py 2>&1 | Out-File -Encoding UTF8 startup_error_2.txt
++ ~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (INFO:     Started server process [5964]:String) [], RemoteExcepti 
+   on
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)

@@ -1,8 +1,6 @@
 import io
 import re
-import threading
-from services.executor import get_executor
-from gtts import gTTS
+import logging
 from botocore.exceptions import ClientError
 
 from services.storage import (
@@ -11,9 +9,10 @@ from services.storage import (
     story_audio_key,
     story_audio_prefix,
 )
+from services.tts import tts_service
 from utils import safe_tts_key
 
-
+logger = logging.getLogger(__name__)
 
 
 def _safe_tts_key_helper(text: str, lang: str = "de") -> str:
@@ -21,6 +20,7 @@ def _safe_tts_key_helper(text: str, lang: str = "de") -> str:
 
 
 def generate_audio_for_word(de_word: str):
+    """Synchronous audio generation — uses tts_service (with global cache)."""
     if not r2_client or not R2_BUCKET_NAME or not de_word:
         return
     try:
@@ -32,12 +32,11 @@ def generate_audio_for_word(de_word: str):
             code = e.response.get("Error", {}).get("Code")
             if code not in ("404", "NoSuchKey", "NotFound"):
                 return
-        buf_mp3 = io.BytesIO()
-        gTTS(text=de_word, lang="de").write_to_fp(buf_mp3)
+        audio_bytes = tts_service.generate(text=de_word, lang="de")
         r2_client.put_object(
             Bucket=R2_BUCKET_NAME,
             Key=r2_key,
-            Body=buf_mp3.getvalue(),
+            Body=audio_bytes,
             ContentType="audio/mpeg",
         )
     except Exception:
@@ -45,11 +44,19 @@ def generate_audio_for_word(de_word: str):
 
 
 def background_audio_generation(words: list):
+    """Dispatch word audio generation to Celery worker queue."""
     if not words:
         return
-    executor = get_executor()
-    for w in words:
-        executor.submit(generate_audio_for_word, w)
+    try:
+        from tasks.audio import generate_word_audio
+        for w in words:
+            if w:
+                generate_word_audio.apply_async(args=[w])
+    except Exception as exc:
+        # Fallback: run synchronously if Celery/Redis is not available
+        logger.warning("Celery unavailable, falling back to sync audio: %s", exc)
+        for w in words:
+            generate_audio_for_word(w)
 
 
 def background_audio_cleanup_and_generate(to_delete: set, to_generate: set):
@@ -63,10 +70,10 @@ def background_audio_cleanup_and_generate(to_delete: set, to_generate: set):
         background_audio_generation(list(to_generate))
 
 
-def _delete_story_audio_prefix(deck: str):
+def _delete_story_audio_prefix(deck: str, user_id: str | None = None):
     if not r2_client or not R2_BUCKET_NAME:
         return
-    prefix = story_audio_prefix(deck)
+    prefix = story_audio_prefix(deck, user_id)
     try:
         continuation = None
         while True:
@@ -86,11 +93,11 @@ def _delete_story_audio_prefix(deck: str):
         pass
 
 
-def generate_story_audio_background(deck: str, segments: list):
+def generate_story_audio_background(deck: str, segments: list, user_id: str | None = None):
     if not r2_client or not R2_BUCKET_NAME:
         return
 
-    _delete_story_audio_prefix(deck)
+    _delete_story_audio_prefix(deck, user_id)
 
     texts_to_generate = set()
     for seg in segments:
@@ -105,19 +112,18 @@ def generate_story_audio_background(deck: str, segments: list):
 
     for text in texts_to_generate:
         try:
-            key = story_audio_key(deck, text)
+            key = story_audio_key(deck, text, user_id)
             try:
                 r2_client.head_object(Bucket=R2_BUCKET_NAME, Key=key)
                 continue
             except ClientError:
                 pass
 
-            buf = io.BytesIO()
-            gTTS(text=text, lang="de").write_to_fp(buf)
+            audio_bytes = tts_service.generate(text=text, lang="de")
             r2_client.put_object(
                 Bucket=R2_BUCKET_NAME,
                 Key=key,
-                Body=buf.getvalue(),
+                Body=audio_bytes,
                 ContentType="audio/mpeg",
             )
         except Exception:

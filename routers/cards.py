@@ -6,10 +6,11 @@ import asyncio
 import urllib.request
 import urllib.error
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import StreamingResponse
-from gtts import gTTS
 from botocore.exceptions import ClientError
+
+from services.tts import tts_service
 
 from models import AudioRebuildRequest
 from services.storage import (
@@ -19,6 +20,7 @@ from services.storage import (
 from services.ai import generate_lines as _gemini_generate_lines, GEMINI_API_KEY
 from services.executor import get_executor
 from services.deck_service import get_cards_silent
+from services.auth import get_current_user
 from utils import safe_deck_name as _safe_deck_name, safe_tts_key as _safe_tts_key_util
 
 router = APIRouter()
@@ -31,7 +33,7 @@ def _safe_tts_key(text: str, lang: str = "de") -> str:
     return _safe_tts_key_util(text, R2_BUCKET_NAME, lang)
 
 @router.get("/tts")
-def tts(text: str, lang: str = "de", slow: bool = False):
+def tts(text: str, lang: str = "de", slow: bool = False, user_id: str = Depends(get_current_user)):
     """Stream from R2 if available; otherwise generate in-memory and upload when configured."""
     # Validate text length to prevent abuse
     if not text or not text.strip():
@@ -46,38 +48,40 @@ def tts(text: str, lang: str = "de", slow: bool = False):
         if r2_client and R2_BUCKET_NAME:
             key = _safe_tts_key(text, lang)
             
-            # Check if exists
+            # Check global cache first (serves cached R2 file)
+            cached_key = tts_service.r2_key_for(text, lang)
+            lookup_key = cached_key or key
             exists = True
             try:
-                r2_client.head_object(Bucket=R2_BUCKET_NAME, Key=key)
+                r2_client.head_object(Bucket=R2_BUCKET_NAME, Key=lookup_key)
             except ClientError as e:
                 code = e.response.get("Error", {}).get("Code")
                 exists = code not in ("404", "NoSuchKey", "NotFound")
             
             if exists:
-                obj = r2_client.get_object(Bucket=R2_BUCKET_NAME, Key=key)
-                return StreamingResponse(obj["Body"], media_type="audio/mpeg")
+                obj = r2_client.get_object(Bucket=R2_BUCKET_NAME, Key=lookup_key)
+                return StreamingResponse(
+                    obj["Body"],
+                    media_type="audio/mpeg",
+                    headers={"Cache-Control": "public, max-age=31536000, immutable"},
+                )
             
-            # Generate and upload
-            buf = io.BytesIO()
-            gTTS(text=text, lang=lang, slow=slow).write_to_fp(buf)
-            r2_client.put_object(
-                Bucket=R2_BUCKET_NAME,
-                Key=key,
-                Body=buf.getvalue(),
-                ContentType="audio/mpeg"
+            # Generate via TTS service (handles global cache write + R2 upload)
+            audio_bytes = tts_service.generate(text=text, lang=lang, slow=slow)
+            return StreamingResponse(
+                io.BytesIO(audio_bytes),
+                media_type="audio/mpeg",
+                headers={"Cache-Control": "public, max-age=31536000, immutable"},
             )
-            return StreamingResponse(io.BytesIO(buf.getvalue()), media_type="audio/mpeg")
         
-        # No R2: just generate and stream
-        buf = io.BytesIO()
-        gTTS(text=text, lang=lang, slow=slow).write_to_fp(buf)
-        return StreamingResponse(io.BytesIO(buf.getvalue()), media_type="audio/mpeg")
+        # No R2 configured — generate and stream directly
+        audio_bytes = tts_service.generate(text=text, lang=lang, slow=slow)
+        return StreamingResponse(io.BytesIO(audio_bytes), media_type="audio/mpeg")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/lines/generate")
-async def generate_lines(deck: str, limit: int | None = None, refresh: bool = False):
+async def generate_lines(deck: str, limit: int | None = None, refresh: bool = False, user_id: str = Depends(get_current_user)):
     safe = _safe_deck_name(deck)
     if not safe:
         raise HTTPException(status_code=400, detail="Invalid deck name")
@@ -189,10 +193,8 @@ async def generate_lines(deck: str, limit: int | None = None, refresh: bool = Fa
                         return True
                     except ClientError:
                         try:
-                            buf = io.BytesIO()
-                            gTTS(text=text, lang="de").write_to_fp(buf)
-                            buf.seek(0)
-                            r2_client.put_object(Bucket=R2_BUCKET_NAME, Key=r2_key, Body=buf.getvalue(), ContentType="audio/mpeg")
+                            audio_bytes = tts_service.generate(text=text, lang="de")
+                            r2_client.put_object(Bucket=R2_BUCKET_NAME, Key=r2_key, Body=audio_bytes, ContentType="audio/mpeg")
                             return True
                         except Exception:
                             return None
@@ -213,7 +215,7 @@ async def generate_lines(deck: str, limit: int | None = None, refresh: bool = Fa
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/lines/debug")
-def lines_debug(deck: str, limit: int | None = None):
+def lines_debug(deck: str, limit: int | None = None, user_id: str = Depends(get_current_user)):
     safe = _safe_deck_name(deck)
     if not safe:
         raise HTTPException(status_code=400, detail="Invalid deck name")
@@ -271,7 +273,7 @@ def lines_debug(deck: str, limit: int | None = None):
         return {"error": str(e), "items": _gemini_generate_lines(cards)}
 
 @router.get("/preload_lines_audio")
-async def preload_lines_audio(deck: str, lang: str = "de"):
+async def preload_lines_audio(deck: str, lang: str = "de", user_id: str = Depends(get_current_user)):
     if not r2_client or not R2_BUCKET_NAME:
         raise HTTPException(status_code=400, detail="Cloudflare R2 is not configured")
     safe = _safe_deck_name(deck)
@@ -295,10 +297,8 @@ async def preload_lines_audio(deck: str, lang: str = "de"):
                     return text, f"/r2/get?key={r2_key}"
                 except ClientError:
                     try:
-                        buf = io.BytesIO()
-                        gTTS(text=text, lang=lang).write_to_fp(buf)
-                        buf.seek(0)
-                        r2_client.put_object(Bucket=R2_BUCKET_NAME, Key=r2_key, Body=buf.getvalue(), ContentType="audio/mpeg")
+                        audio_bytes = tts_service.generate(text=text, lang=lang)
+                        r2_client.put_object(Bucket=R2_BUCKET_NAME, Key=r2_key, Body=audio_bytes, ContentType="audio/mpeg")
                         return text, f"/r2/get?key={r2_key}"
                     except Exception:
                         return None, None
@@ -329,7 +329,7 @@ async def preload_lines_audio(deck: str, lang: str = "de"):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/audio/rebuild")
-def audio_rebuild(req: AudioRebuildRequest):
+def audio_rebuild(req: AudioRebuildRequest, user_id: str = Depends(get_current_user)):
     """Delete old audio (if provided) and regenerate new audio for given text/lang."""
     if not r2_client or not R2_BUCKET_NAME:
         raise HTTPException(status_code=400, detail="Cloudflare R2 is not configured")
@@ -356,13 +356,12 @@ def audio_rebuild(req: AudioRebuildRequest):
             pass
 
         # Generate fresh audio
-        buf = io.BytesIO()
-        gTTS(text=text, lang=lang).write_to_fp(buf)
+        audio_bytes = tts_service.generate(text=text, lang=lang)
         key = _safe_tts_key(text, lang)
         r2_client.put_object(
             Bucket=R2_BUCKET_NAME,
             Key=key,
-            Body=buf.getvalue(),
+            Body=audio_bytes,
             ContentType="audio/mpeg",
         )
         return {"ok": True, "key": key, "url": f"/r2/get?key={key}"}

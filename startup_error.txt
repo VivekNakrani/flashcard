@@ -1,0 +1,20 @@
+﻿--- R2 CONFIG CHECK ---
+Bucket: flashcard-audio-storage
+Endpoint: https://05b9a0dea3168bb0da9f74ccc51ca53b.r2.cloudflarestorage.com
+Access Key Fixed: Yes
+-----------------------
+python : Traceback (most recent call last):
+At line:1 char:1
++ python app.py 2>&1 | Out-File -Encoding UTF8 startup_error.txt
++ ~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Traceback (most recent call last)::String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  File "C:\Users\vivek\Desktop\flashcard\app.py", line 42, in <module>
+    from routers import screens, decks, folders, stories, cards, system, pdfs, auth, jobs
+  File "C:\Users\vivek\Desktop\flashcard\routers\stories.py", line 17, in <module>
+    from services.storage import (
+    ...<8 lines>...
+    )
+ImportError: cannot import name 'stories_index_key' from 'services.storage' 
+(C:\Users\vivek\Desktop\flashcard\services\storage.py)

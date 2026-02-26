@@ -1,66 +1,67 @@
-"""Shared deck service to eliminate code duplication across routers."""
-
-import csv
-import io
 from fastapi import HTTPException
-from botocore.exceptions import ClientError
-
-from services.storage import r2_client, R2_BUCKET_NAME
+from services.database import get_db
 from utils import safe_deck_name
 
 
-def get_cards(deck: str) -> list[dict]:
+def get_cards(deck: str, user_id: str | None = None) -> list[dict]:
     """
-    Fetch cards from a deck CSV in R2.
+    Fetch cards from the 'cards' table in Supabase.
     
     Args:
         deck: The deck name
+        user_id: The ID of the authenticated user
         
     Returns:
         List of card dictionaries with 'en' and 'de' keys
         
     Raises:
-        HTTPException: If deck name is invalid, not found, or R2 error occurs
+        HTTPException: If deck name is invalid, not found, or DB error occurs
     """
     safe = safe_deck_name(deck)
     if not safe:
         raise HTTPException(status_code=400, detail="Invalid deck name")
 
-    if not r2_client or not R2_BUCKET_NAME:
-        raise HTTPException(status_code=400, detail="Cloudflare R2 is not configured")
+    db = get_db()
     
-    key = f"{R2_BUCKET_NAME}/csv/{safe}.csv"
     try:
-        obj = r2_client.get_object(Bucket=R2_BUCKET_NAME, Key=key)
-        data = obj["Body"].read().decode("utf-8")
-        result = []
-        reader = csv.reader(io.StringIO(data))
-        for row in reader:
-            if len(row) >= 2:
-                en, de = row[0].strip(), row[1].strip()
-                if en and de:
-                    result.append({"en": en, "de": de})
-        return result
-    except ClientError as e:
-        code = e.response.get("Error", {}).get("Code")
-        if code in ("404", "NoSuchKey", "NotFound"):
+        # 1. Find the deck ID for this user (or template deck if user_id is None)
+        query = db.table("decks").select("id").eq("name", safe)
+        if user_id:
+            query = query.eq("user_id", user_id)
+        else:
+            query = query.is_("user_id", "null")
+            
+        deck_res = query.execute()
+        
+        # If not found for user, try looking for a template deck (user_id is NULL) as fallback
+        if not deck_res.data and user_id:
+            deck_res = db.table("decks").select("id").eq("name", safe).is_("user_id", "null").execute()
+            
+        if not deck_res.data:
             raise HTTPException(status_code=404, detail="Deck not found")
+        
+        deck_id = deck_res.data[0]["id"]
+        
+        # 2. Fetch all cards for this deck_id, sorted by order_index
+        cards_res = db.table("cards").select("en, de").eq("deck_id", deck_id).order("order_index").execute()
+        
+        if not cards_res.data:
+            return []
+            
+        return [{"en": c["en"], "de": c["de"]} for c in cards_res.data]
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error fetching cards from DB: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
-def get_cards_silent(deck: str) -> list[dict]:
+def get_cards_silent(deck: str, user_id: str | None = None) -> list[dict]:
     """
-    Fetch cards from a deck CSV in R2, returning empty list on errors.
-    
-    Useful for background operations where exceptions shouldn't propagate.
-    
-    Args:
-        deck: The deck name
-        
-    Returns:
-        List of card dictionaries, or empty list on any error
+    Fetch cards from DB, returning empty list on errors.
     """
     try:
-        return get_cards(deck)
+        return get_cards(deck, user_id)
     except Exception:
         return []
